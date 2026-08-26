@@ -1,36 +1,94 @@
-Before deploying anything, complete the remaining backend acceptance item.
+Now do the final backend checkpoint before we move toward mobile.
 
 
 
-Run the actual API Edge Function locally against the local Supabase stack.
+1\. Run the complete test suite again:
+
+&#x20;  - Vitest/unit tests
+
+&#x20;  - TypeScript typecheck
+
+&#x20;  - local Supabase/RLS permission matrix
+
+&#x20;  - the real local HTTP end-to-end API flows
 
 
 
-Exercise the real HTTP/API flow for:
+2\. Review the final Git state:
 
-1\. create recommendation
+&#x20;  - run git status
 
-2\. re-recommendation
+&#x20;  - inspect the full diff since the previous stable commit
 
-3\. search
+&#x20;  - verify there are no secrets, tokens, .env files, Docker-generated files, or other local-only artifacts staged
 
-4\. authorization/visibility
-
-
-
-Do not rely on mocked tests for this step.
+&#x20;  - verify the recent commits a1527b0 and 4b6a317 contain only intended project changes
 
 
 
-If the Edge Function cannot currently be served locally, diagnose why and fix only what is necessary to make the local API testable.
+3\. If everything is clean, commit any remaining intended changes. Do not create unnecessary commits.
 
 
 
-Do not deploy to the hosted dev project yet.
+4\. Push the resulting main branch to:
 
-Do not start mobile UI.
+&#x20;  https://github.com/seeckerstein/recommendly
 
 
 
-Afterward report the exact end-to-end tests and results.
+5\. Only after the GitHub push succeeds, deploy the committed database migrations and backend changes to the hosted Supabase development project recommendly-dev.
+
+
+
+6\. After deployment, exercise the hosted API end-to-end:
+
+&#x20;  - authentication
+
+&#x20;  - create recommendation
+
+&#x20;  - re-recommendation
+
+&#x20;  - search
+
+&#x20;  - authorization/visibility
+
+&#x20;  - unauthenticated access
+
+
+
+7\. Compare the hosted results with the local results and report any differences.
+
+
+
+Important:
+
+\- Do NOT touch production.
+
+\- Do NOT start the mobile UI yet.
+
+\- Do NOT introduce new architecture.
+
+\- Do NOT skip tests because of environment problems.
+
+\- Do NOT commit or expose secrets.
+
+\- If anything fails, stop at that point, explain the failure, and do not blindly continue.
+
+
+
+At the end, give me a concise report containing:
+
+\- final Git commit(s)
+
+\- GitHub push result
+
+\- hosted Supabase deployment result
+
+\- exact tests run and results
+
+\- hosted E2E results
+
+\- any remaining blockers
+
+\- whether the backend is now ready for mobile development.
 
