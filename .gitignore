@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+node_modules/
+.pnpm-store/
+.supabase/
+supabase/.temp/
+coverage/
+dist/
+.expo/

@@ -1,0 +1,22 @@
+{
+  "name": "recommendation-network",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm test:unit",
+    "test:unit": "vitest run",
+    "test:db": "supabase test db",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "prettier": "^3.0.0",
+    "supabase": "^2.115.0",
+    "typescript": "^5.0.0",
+    "vitest": "^3.0.0"
+  }
+}
