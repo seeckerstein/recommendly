@@ -1,94 +1,136 @@
-Now do the final backend checkpoint before we move toward mobile.
+We discovered a real issue during manual API testing that needs to be investigated and fixed.
 
 
 
-1\. Run the complete test suite again:
-
-&#x20;  - Vitest/unit tests
-
-&#x20;  - TypeScript typecheck
-
-&#x20;  - local Supabase/RLS permission matrix
-
-&#x20;  - the real local HTTP end-to-end API flows
+Do NOT start mobile development yet.
 
 
 
-2\. Review the final Git state:
+Context:
 
-&#x20;  - run git status
+\- The local Supabase stack is running.
 
-&#x20;  - inspect the full diff since the previous stable commit
+\- The existing E2E tests previously passed:
 
-&#x20;  - verify there are no secrets, tokens, .env files, Docker-generated files, or other local-only artifacts staged
+&#x20; - 18/18 RLS tests
 
-&#x20;  - verify the recent commits a1527b0 and 4b6a317 contain only intended project changes
+&#x20; - 8/8 unit tests
 
+&#x20; - local HTTP E2E create/recommend/search/authorization flows
 
+\- Those tests used the existing test users owner@test.local and other@test.local.
 
-3\. If everything is clean, commit any remaining intended changes. Do not create unnecessary commits.
+\- I manually created a NEW local Supabase Auth user:
 
+&#x20; manual-test@example.local
 
+\- I successfully obtained a JWT for that user.
 
-4\. Push the resulting main branch to:
+\- GET /functions/v1/api/v1/recommendations with that JWT works and returns an empty result.
 
-&#x20;  https://github.com/seeckerstein/recommendly
-
-
-
-5\. Only after the GitHub push succeeds, deploy the committed database migrations and backend changes to the hosted Supabase development project recommendly-dev.
-
-
-
-6\. After deployment, exercise the hosted API end-to-end:
-
-&#x20;  - authentication
-
-&#x20;  - create recommendation
-
-&#x20;  - re-recommendation
-
-&#x20;  - search
-
-&#x20;  - authorization/visibility
-
-&#x20;  - unauthenticated access
+\- However, POST /functions/v1/api/v1/recommendations using that same JWT fails with:
 
 
 
-7\. Compare the hosted results with the local results and report any differences.
+&#x20; insert or update on table "recommendations" violates foreign key constraint
+
+&#x20; "recommendations\_user\_id\_fkey"
 
 
 
-Important:
-
-\- Do NOT touch production.
-
-\- Do NOT start the mobile UI yet.
-
-\- Do NOT introduce new architecture.
-
-\- Do NOT skip tests because of environment problems.
-
-\- Do NOT commit or expose secrets.
-
-\- If anything fails, stop at that point, explain the failure, and do not blindly continue.
+This suggests that the normal Auth signup path creates an auth.users record but does not create the corresponding application-level user/profile record required by recommendations.user\_id.
 
 
 
-At the end, give me a concise report containing:
+Your task:
 
-\- final Git commit(s)
 
-\- GitHub push result
 
-\- hosted Supabase deployment result
+1\. Investigate the database schema and foreign-key relationship for:
 
-\- exact tests run and results
+&#x20;  - auth.users
 
-\- hosted E2E results
+&#x20;  - public users/profiles table(s)
 
-\- any remaining blockers
+&#x20;  - recommendations.user\_id
 
-\- whether the backend is now ready for mobile development.
+
+
+2\. Inspect the existing migrations and API implementation to determine how an authenticated user is expected to map from auth.users to the application user/profile record.
+
+
+
+3\. Determine why the existing E2E fixture users work but a freshly created Auth user does not.
+
+
+
+4\. Decide what the correct application behavior should be for a newly registered user.
+
+&#x20;  Do not simply work around the foreign-key constraint or manually insert arbitrary IDs.
+
+
+
+5\. If the intended architecture is that every authenticated user must have an application profile/user record, implement the appropriate signup/profile provisioning mechanism.
+
+
+
+6\. Add or update automated tests that reproduce the failure with a newly created user and verify the correct behavior after the fix.
+
+
+
+7\. Re-run:
+
+&#x20;  - unit tests
+
+&#x20;  - TypeScript check
+
+&#x20;  - RLS permission matrix
+
+&#x20;  - local HTTP E2E tests
+
+&#x20;  - the new test covering a fresh Auth user
+
+
+
+8\. Do NOT deploy anything to hosted Supabase.
+
+9\. Do NOT modify production.
+
+10\. Do NOT start mobile development.
+
+
+
+Before changing code, explain briefly:
+
+\- what the foreign key points to
+
+\- why the manually-created Auth user fails
+
+\- why the existing E2E users succeed
+
+\- what you intend to change
+
+
+
+Then make the smallest correct architectural fix.
+
+
+
+At the end, report:
+
+\- root cause
+
+\- files changed
+
+\- tests added/changed
+
+\- complete test results
+
+\- whether the manual API flow should now work
+
+\- any remaining issues
+
+
+
+Commit the fix only after all tests pass.
 

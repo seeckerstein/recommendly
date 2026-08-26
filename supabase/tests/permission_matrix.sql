@@ -1,16 +1,12 @@
 ﻿begin;
 create extension if not exists pgtap;
-select plan(18);
+select plan(20);
 
 -- Seed users, profiles, and a private recommendation.
 insert into auth.users (id, aud, role, email) values
   ('00000000-0000-0000-0000-000000000001', 'authenticated', 'authenticated', 'owner@example.test'),
   ('00000000-0000-0000-0000-000000000002', 'authenticated', 'authenticated', 'subscriber@example.test'),
   ('00000000-0000-0000-0000-000000000003', 'authenticated', 'authenticated', 'other@example.test');
-insert into public.profiles (id, username, display_name, profile_visibility) values
-  ('00000000-0000-0000-0000-000000000001', 'owner', 'Owner', 'PRIVATE'),
-  ('00000000-0000-0000-0000-000000000002', 'subscriber', 'Subscriber', 'PRIVATE'),
-  ('00000000-0000-0000-0000-000000000003', 'other', 'Other', 'PRIVATE');
 insert into public.recommendations (id, user_id, category_id, comment) values
   ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', (select id from public.categories where slug='book'), 'private note about a great book');
 
@@ -29,6 +25,33 @@ select is((select count(*) from public.recommendations), 1::bigint, '[private] o
 select pg_temp._as('00000000-0000-0000-0000-000000000002');
 select is((select count(*) from public.recommendations), 0::bigint, '[private] unauthorized user sees nothing');
 
+reset role;
+
+-- ============================================================
+-- SECTION: AUTH USER PROFILE PROVISIONING
+-- Reproduces fresh Auth signup without manual profile creation.
+-- ============================================================
+
+insert into auth.users (id, aud, role, email)
+values ('44444444-4444-4444-4444-444444444444', 'authenticated', 'authenticated', 'fresh@example.test');
+
+select is(
+  (select count(*) from public.profiles where id = '44444444-4444-4444-4444-444444444444'),
+  1::bigint,
+  '[signup] fresh auth users row is provisioned into profiles'
+);
+
+insert into public.categories (slug, name) values ('provision-test', 'Provision Test') returning id as category_id \gset
+
+set local role authenticated;
+select pg_temp._as('44444444-4444-4444-4444-444444444444');
+insert into public.recommendations (user_id, category_id, comment) values
+  ('44444444-4444-4444-4444-444444444444', :'category_id', 'created by freshly signed-up user');
+select is(
+  (select count(*) from public.recommendations where comment = 'created by freshly signed-up user'),
+  1::bigint,
+  '[signup] fresh auth users can create a recommendation'
+);
 reset role;
 set local role anon;
 select ok(not has_table_privilege('anon', 'public.recommendations', 'SELECT'), '[private] anon role denied SELECT on recommendations');
