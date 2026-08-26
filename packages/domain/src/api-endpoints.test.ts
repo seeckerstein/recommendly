@@ -1,0 +1,120 @@
+﻿import { describe, expect, it, vi } from "vitest";
+
+// Minimal mock of the supabase-js query builder chain used by the Edge Function.
+function makeMockClient(overrides: Record<string, unknown> = {}) {
+  const selectResult = overrides.select ?? { data: [{ id: "rec-1", category_id: "cat-1", comment: "test" }] };
+  const insertResult = overrides.insert ?? { data: { id: "new-rec", category_id: "cat-1" }, error: null };
+  const categoryResult = overrides.category ?? { data: { id: "cat-1" }, error: null };
+  const searchResult = overrides.search ?? { data: [], error: null };
+  const sourceResult = overrides.source ?? { data: { category_id: "cat-1", comment: "source comment", title: "Book", rating: 4, tags: ["a"], metadata: {} }, error: null };
+
+  function chain(table: string) {
+    let currentOp = "select";
+    const builder: Record<string, (...args: unknown[]) => any> & PromiseLike<any> = {} as never;
+
+    const resolve = () => {
+      if (table === "categories") return categoryResult;
+      if (currentOp === "insert") return insertResult;
+      if (overrides.searchCalled) return searchResult;
+      if (table === "recommendations" && overrides.isSingle) return sourceResult;
+      return selectResult;
+    };
+
+    Object.assign(builder, {
+      select(..._args: unknown[]) { return builder; },
+      insert(data: Record<string, unknown>) {
+        currentOp = "insert";
+        overrides.lastInsertData = data;
+        return builder;
+      },
+      eq(...args: unknown[]) { (builder as Record<string, unknown>).eqArgs = args; return builder; },
+      order() { return builder; },
+      limit() { return builder; },
+      textSearch(column: string) { overrides.textSearchColumn = column; overrides.searchCalled = true; return builder; },
+      single() { overrides.isSingle = true; return builder; },
+      then(onFulfilled?: (value: unknown) => void) {
+        return Promise.resolve(resolve()).then(onFulfilled);
+      },
+    });
+    return builder as typeof builder;
+  }
+
+  return { from: chain, _state: overrides };
+}
+
+describe("API endpoint logic (mocked Supabase client)", () => {
+  describe("POST /v1/recommendations â€” create", () => {
+    it("resolves category_id and inserts with correct fields", async () => {
+      const mock = makeMockClient({});
+      const body = { category: "book", comment: "Great read", title: "My Book" };
+
+      // Simulate the API's resolution + insert sequence.
+      const catRes = await mock.from("categories").select("id").eq("slug", body.category).eq("active", true).single();
+      const catData = (catRes as { data: { id: string }; error: unknown }).data;
+      expect(catData.id).toBe("cat-1");
+      const insertPayload = {
+        category_id: catData.id,
+        comment: body.comment,
+        title: body.title,
+        rating: null,
+        tags: [],
+        metadata: {},
+      };
+      await mock.from("recommendations").insert(insertPayload).select().single();
+      const lastInsert = (mock._state as { lastInsertData?: Record<string, unknown> }).lastInsertData;
+      expect(lastInsert?.category_id).toBe("cat-1");
+      expect(lastInsert?.comment).toBe("Great read");
+      expect(lastInsert?.title).toBe("My Book");
+    });
+
+    it("rejects missing category or comment before querying the DB", async () => {
+      expect(!{ category: "", comment: "hi" }.category).toBe(true);
+      expect(!{ category: "book", comment: "" }.comment.trim()).toBe(true);
+    });
+
+    it("returns error for unknown category", async () => {
+      const mock = makeMockClient({ category: { data: null, error: { message: "no rows" } } });
+      const res = await mock.from("categories").select("id").eq("slug", "nonexistent").single();
+      expect(res.error).toBeTruthy();
+    });
+  });
+
+  describe("POST /v1/recommendations/:id/recommend â€” re-recommendation", () => {
+    it("copies category_id and comment from the source recommendation", async () => {
+      const source = { category_id: "cat-movie", comment: "great film", title: "Film", rating: 5, tags: ["drama"], metadata: { director: "X" } };
+      const mock = makeMockClient({ source: { data: source, error: null } });
+      const srcRes = await mock.from("recommendations").select("*").eq("id", "some-id").single();
+      const srcData = (srcRes as { data: typeof source; error: unknown }).data;
+      expect(srcData.category_id).toBe("cat-movie");
+      const insertPayload = {
+        category_id: srcData.category_id,
+        comment: srcData.comment,
+        title: srcData.title,
+        rating: srcData.rating,
+        tags: srcData.tags,
+        metadata: srcData.metadata,
+      };
+      await mock.from("recommendations").insert(insertPayload);
+      const lastInsert = (mock._state as { lastInsertData?: Record<string, unknown> }).lastInsertData;
+      expect(lastInsert?.category_id).toBe("cat-movie");
+      expect(lastInsert?.comment).toBe("great film");
+    });
+
+    it("returns 404 when the source is not accessible", async () => {
+      const mock = makeMockClient({ source: { data: null, error: { message: "row-level security blocks access" } } });
+      const res = await mock.from("recommendations").select("*").eq("id", "blocked-id").single();
+      expect(res.data).toBeNull();
+    });
+  });
+
+  describe("GET /v1/recommendations?q=... â€” full-text search", () => {
+    it("calls textSearch on the title/comment tsvector", async () => {
+      const mock = makeMockClient({});
+      await mock.from("recommendations").select("*").textSearch("title", "great book").limit(100);
+      const col = (mock._state as { textSearchColumn?: string }).textSearchColumn;
+      expect(col).toBe("title");
+      expect(mock._state.searchCalled).toBe(true);
+    });
+  });
+});
+

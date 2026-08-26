@@ -24,7 +24,7 @@ Deno.serve(async (request) => {
       const { data, error } = await client
         .from("recommendations")
         .select("*")
-        .textSearch("", query)
+        .textSearch("title", query, { type: "websearch", config: "simple" })
         .order("created_at", { ascending: false })
         .limit(100);
       return json(error ? { error: error.message } : { data }, error ? 400 : 200);
@@ -48,9 +48,21 @@ Deno.serve(async (request) => {
     if (!body.category || !body.comment?.trim()) {
       return json({ error: "category and comment are required" }, 400);
     }
+
+    const { data: category, error: categoryError } = await client
+      .from("categories")
+      .select("id")
+      .eq("slug", body.category)
+      .eq("active", true)
+      .single();
+    if (categoryError || !category) {
+      return json({ error: `Unknown or inactive category: ${body.category}` }, 400);
+    }
+
     const { data, error } = await client
       .from("recommendations")
       .insert({
+        category_id: category.id,
         comment: body.comment,
         title: body.title ?? null,
         rating: body.rating ?? null,
@@ -76,6 +88,8 @@ Deno.serve(async (request) => {
     const { data, error } = await client
       .from("recommendations")
       .insert({
+        category_id: source.category_id,
+        comment: source.comment ?? "",
         title: source.title,
         rating: source.rating,
         tags: source.tags,
