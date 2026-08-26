@@ -1,6 +1,6 @@
 ﻿begin;
 create extension if not exists pgtap;
-select plan(20);
+select plan(23);
 
 -- Seed users, profiles, and a private recommendation.
 insert into auth.users (id, aud, role, email) values
@@ -39,6 +39,57 @@ select is(
   (select count(*) from public.profiles where id = '44444444-4444-4444-4444-444444444444'),
   1::bigint,
   '[signup] fresh auth users row is provisioned into profiles'
+);
+
+-- Simulate a pre-existing auth user without a profile: temporarily create it
+-- as if the trigger had not existed. This cannot use ALTER TABLE on auth.users
+-- without ownership, so instead: create a fresh user via the normal trigger,
+-- then DELETE its profile row to reproduce the pre-backfill state.
+insert into auth.users (id, aud, role, email)
+values ('55555555-5555-5555-5555-555555555555', 'authenticated', 'authenticated', 'legacy@example.test');
+delete from public.profiles where id = '55555555-5555-5555-5555-555555555555';
+
+select is(
+  (select count(*) from public.profiles where id = '55555555-5555-5555-5555-555555555555'),
+  0::bigint,
+  '[backfill] pre-existing auth user has no profile before backfill'
+);
+
+-- Execute the identical backfill statement defined in the migration.
+insert into public.profiles (id, username, display_name)
+select
+  u.id,
+  coalesce(
+    nullif(u.raw_user_meta_data ->> 'username', ''),
+    'user_' || right(replace(u.id::text, '-', ''), 25)
+  ),
+  coalesce(
+    nullif(u.raw_user_meta_data ->> 'display_name', ''),
+    split_part(coalesce(u.email, 'user'), '@', 1)
+  )
+from auth.users u
+where not exists (
+  select 1 from public.profiles p where p.id = u.id
+);
+
+select is(
+  (select count(*) from public.profiles where id = '55555555-5555-5555-5555-555555555555'),
+  1::bigint,
+  '[backfill] missing profile is provisioned exactly once'
+);
+
+-- Re-run proves idempotency: no new rows inserted.
+insert into public.profiles (id, username, display_name)
+select u.id,
+  'user_' || right(replace(u.id::text, '-', ''), 25),
+  split_part(coalesce(u.email,'user'),'@',1)
+from auth.users u
+where not exists (select 1 from public.profiles p where p.id = u.id);
+
+select is(
+  (select count(*) from public.profiles where id = '55555555-5555-5555-5555-555555555555'),
+  1::bigint,
+  '[backfill] second run inserts nothing (idempotent)'
 );
 
 insert into public.categories (slug, name) values ('provision-test', 'Provision Test') returning id as category_id \gset
