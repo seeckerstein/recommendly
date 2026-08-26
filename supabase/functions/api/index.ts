@@ -24,7 +24,7 @@ Deno.serve(async (request) => {
       const { data, error } = await client
         .from("recommendations")
         .select("*")
-        .textSearch("title", query, { type: "websearch", config: "simple" })
+        .or(`comment.fts.${query},title.fts.${query}`)
         .order("created_at", { ascending: false })
         .limit(100);
       return json(error ? { error: error.message } : { data }, error ? 400 : 200);
@@ -49,6 +49,11 @@ Deno.serve(async (request) => {
       return json({ error: "category and comment are required" }, 400);
     }
 
+    const { data: { user }, error: userError } = await client.auth.getUser();
+    if (!user) {
+      return json({ error: "Invalid authentication token" }, 401);
+    }
+
     const { data: category, error: categoryError } = await client
       .from("categories")
       .select("id")
@@ -62,6 +67,7 @@ Deno.serve(async (request) => {
     const { data, error } = await client
       .from("recommendations")
       .insert({
+        user_id: user.id,
         category_id: category.id,
         comment: body.comment,
         title: body.title ?? null,
@@ -85,9 +91,14 @@ Deno.serve(async (request) => {
     if (sourceError || !source) {
       return json({ error: "Recommendation not found or access denied" }, 404);
     }
+    const { data: { user }, error: userError } = await client.auth.getUser();
+    if (!user) {
+      return json({ error: "Invalid authentication token" }, 401);
+    }
     const { data, error } = await client
       .from("recommendations")
       .insert({
+        user_id: user.id,
         category_id: source.category_id,
         comment: source.comment ?? "",
         title: source.title,
