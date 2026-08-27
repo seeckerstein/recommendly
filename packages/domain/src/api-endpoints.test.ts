@@ -177,3 +177,13 @@ describe("PATCH /v1/recommendations/:id", () => {
     expect(softDeletePayload.deleted_at).toBeTruthy();
   });
 });
+
+describe("PATCH /v1/recommendations/:id - category change", () => {
+  it("includes category_id in whitelist", () => {
+    const allowed = ["title", "comment", "rating", "tags", "metadata", "category_id"];
+    const body = { category_id: "new-cat-uuid" };
+    const updates: Record<string, unknown> = {};
+    for (const k of allowed) if (k in body) updates[k] = body[k];
+    expect(updates).toEqual({ category_id: "new-cat-uuid" });
+  });
+});

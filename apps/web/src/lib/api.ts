@@ -85,7 +85,7 @@ export async function createRecommendation(input: CreateRecommendationInput): Pr
   const json = await res.json();
   return json.data as Recommendation;
 }
-export async function updateRecommendation(id: string, patch: Partial<CreateRecommendationInput>): Promise<Recommendation> {
+export async function updateRecommendation(id: string, patch: Partial<CreateRecommendationInput> & { category_id?: string }): Promise<Recommendation> {
   const res = await fetch(apiUrl(`/v1/recommendations/${id}`), {
     method: "PATCH",
     headers: await getAuthHeaders(),
@@ -108,4 +108,20 @@ export async function deleteRecommendation(id: string): Promise<void> {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error ?? `Failed to delete recommendation (${res.status})`);
   }
+}
+export async function getCategoryMap(): Promise<Map<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Not authenticated");
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, "");
+  const res = await fetch(`${base}/rest/v1/categories?select=id,slug`, {
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    },
+  });
+  if (!res.ok) throw new Error("Failed to load categories");
+  const rows = await res.json();
+  const map = new Map<string, string>();
+  for (const row of rows) map.set(row.slug, row.id);
+  return map;
 }

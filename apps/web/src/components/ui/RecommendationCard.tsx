@@ -56,7 +56,7 @@ export function RecommendationCard({
               aria-label="Recommendation actions"
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((v) => !v)}
-              className="!px-2 !py-1"
+              className="!px-3 !py-1.5 border border-neutral-300 bg-white text-neutral-600 shadow-sm hover:bg-neutral-100 hover:text-neutral-900 min-h-[36px] min-w-[36px]"
             >
               ⋯
             </Button>

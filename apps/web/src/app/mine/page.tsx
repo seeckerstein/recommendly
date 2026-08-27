@@ -51,7 +51,7 @@ export default function MyRecommendationsPage() {
       <Page>
         <div className="flex items-center justify-between">
           <PageTitle eyebrow="Library">My recommendations</PageTitle>
-          <ButtonLink href="/new" variant="accent" className="shrink-0">Add new</ButtonLink>
+          <ButtonLink href="/new" variant="accent" className="shrink-0 px-6 py-3 text-base">+ Add new</ButtonLink>
         </div>
 
         <div className="mt-8 space-y-4">

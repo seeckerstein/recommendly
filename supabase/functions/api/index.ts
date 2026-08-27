@@ -132,7 +132,7 @@ Deno.serve(async (request) => {
     if (request.method === "PATCH") {
       let body;
       try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
-      const allowed = ["title", "comment", "rating", "tags", "metadata"];
+      const allowed = ["title", "comment", "rating", "tags", "metadata", "category_id"];
       const updates: Record<string, unknown> = {};
       for (const key of allowed) {
         if (key in body) updates[key] = body[key];

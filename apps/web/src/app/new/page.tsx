@@ -11,6 +11,7 @@ import {
   createRecommendation,
   updateRecommendation,
   fetchMyRecommendations,
+  getCategoryMap,
 } from "@/lib/api";
 import { categorySlugs, type CategorySlug } from "recommendation-domain";
 
@@ -81,8 +82,12 @@ function NewRecommendationForm() {
     setSaving(true);
     try {
       const cleanMetadata = Object.fromEntries(Object.entries(metadata).filter(([, v]) => v.trim()));
+      const catMap = await getCategoryMap();
+      const category_id = catMap.get(category);
+      if (!category_id) throw new Error("Invalid category selected.");
       const payload = {
         category,
+        category_id,
         comment: comment.trim(),
         title: title.trim() || undefined,
         rating: (rating ?? undefined) as 1 | 2 | 3 | 4 | 5 | undefined,
@@ -119,7 +124,7 @@ function NewRecommendationForm() {
                       key={c}
                       onClick={() => switchCategory(c)}
                       aria-pressed={category === c}
-                      disabled={!!editId}
+                      disabled={false}
                       className={`rounded-full border px-4 py-1.5 text-sm font-medium capitalize transition ${
                         category === c
                           ? "border-orange-700 bg-orange-700 text-white"
