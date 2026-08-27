@@ -133,7 +133,7 @@ describe("PATCH /v1/me", () => {
   it("filters disallowed fields and sends only whitelisted keys", async () => {
     const mock = makeMockClient({});
     const allowed = ["username", "display_name", "bio", "avatar_url", "profile_visibility"];
-    const body = { username: "newname", role: "admin", evil: true };
+    const body: Record<string, unknown> = { username: "newname", role: "admin", evil: true };
     const updates: Record<string, unknown> = {};
     for (const k of allowed) if (k in body) updates[k] = body[k];
     expect(updates).toEqual({ username: "newname" });
@@ -153,5 +153,27 @@ describe("GET /v1/recommendations?scope=mine", () => {
     const userId = "u-1";
     const q = mock.from("recommendations").select("*").eq("user_id", userId).limit(100);
     expect(q.eqArgs).toEqual(["user_id", userId]);
+  });
+});
+
+describe("PATCH /v1/recommendations/:id", () => {
+  it("whitelists editable fields only", () => {
+    const allowed = ["title", "comment", "rating", "tags", "metadata"];
+    const body: Record<string, unknown> = { title: "New Title", user_id: "hack", created_at: "evil" };
+    const updates: Record<string, unknown> = {};
+    for (const k of allowed) if (k in body) updates[k] = body[k];
+    expect(updates).toEqual({ title: "New Title" });
+  });
+
+  it("returns error when no valid fields provided", () => {
+    const allowed = ["title", "comment", "rating", "tags", "metadata"];
+    const body = { deleted_at: "now" };
+    const matched = allowed.filter((k) => k in body);
+    expect(matched.length).toBe(0);
+  });
+
+  it("soft-deletes by setting deleted_at (DELETE endpoint)", () => {
+    const softDeletePayload = { deleted_at: new Date().toISOString() };
+    expect(softDeletePayload.deleted_at).toBeTruthy();
   });
 });

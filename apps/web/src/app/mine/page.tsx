@@ -1,27 +1,50 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { AppShell } from "@/components/nav/AppShell";
 import { Page, PageTitle } from "@/components/ui/Card";
-import { ButtonLink } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { RecommendationCard } from "@/components/ui/RecommendationCard";
-import { fetchMyRecommendations, fetchMe, type Recommendation, type Profile } from "@/lib/api";
+import { Modal } from "@/components/ui/Modal";
+import {
+  fetchMyRecommendations,
+  deleteRecommendation,
+  type Recommendation,
+} from "@/lib/api";
 
 export default function MyRecommendationsPage() {
   const [recs, setRecs] = useState<Recommendation[] | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [toDelete, setToDelete] = useState<Recommendation | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    Promise.all([fetchMyRecommendations(), fetchMe()])
-      .then(([r, p]) => { setRecs(r); setProfile(p); })
-      .catch((e) => setError((e as Error).message))
-      .finally(() => setLoading(false));
-  }, []);
+  async function load() {
+    setLoading(true);
+    try {
+      setRecs(await fetchMyRecommendations());
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const categoryById = new Map(profile ? [] : []);
+  useEffect(() => { load(); }, []);
+
+  async function confirmDelete() {
+    if (!toDelete) return;
+    setDeleting(true);
+    try {
+      await deleteRecommendation(toDelete.id);
+      setRecs((prev) => (prev ?? []).filter((r) => r.id !== toDelete.id));
+      setToDelete(null);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <AppShell>
@@ -46,10 +69,27 @@ export default function MyRecommendationsPage() {
             </div>
           )}
           {recs?.map((r) => (
-            <RecommendationCard key={r.id} recommendation={r} />
+            <RecommendationCard
+              key={r.id}
+              recommendation={r}
+              onEdit={(rec) => window.location.assign(`/new?edit=${rec.id}`)}
+              onDelete={setToDelete}
+            />
           ))}
         </div>
       </Page>
+
+      <Modal open={!!toDelete} onClose={() => setToDelete(null)} title="Delete this recommendation?">
+        <p className="text-sm text-neutral-600">
+          This will remove “{toDelete?.title ?? "this recommendation"}” from your library. This cannot be undone.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setToDelete(null)}>Cancel</Button>
+          <Button onClick={confirmDelete} disabled={deleting} className="!bg-red-600 hover:!bg-red-500 !text-white">
+            {deleting ? "Deleting…" : "Delete"}
+          </Button>
+        </div>
+      </Modal>
     </AppShell>
   );
 }

@@ -65,7 +65,10 @@ export async function fetchMyRecommendations(): Promise<Recommendation[]> {
   });
   if (!res.ok) throw new Error(`Failed to load recommendations (${res.status})`);
   const json = await res.json();
-  return (json.data ?? []) as Recommendation[];
+  const recs = (json.data ?? []) as Recommendation[];
+  const { data: cats } = await supabase.from("categories").select("id, slug");
+  const catMap = new Map((cats ?? []).map((c: any) => [c.id, c.slug]));
+  return recs.map((r) => ({ ...r, category_id: catMap.get(r.category_id) ?? r.category_id }));
 }
 
 export async function createRecommendation(input: CreateRecommendationInput): Promise<Recommendation> {
@@ -81,4 +84,28 @@ export async function createRecommendation(input: CreateRecommendationInput): Pr
   }
   const json = await res.json();
   return json.data as Recommendation;
+}
+export async function updateRecommendation(id: string, patch: Partial<CreateRecommendationInput>): Promise<Recommendation> {
+  const res = await fetch(apiUrl(`/v1/recommendations/${id}`), {
+    method: "PATCH",
+    headers: await getAuthHeaders(),
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error ?? `Failed to update recommendation (${res.status})`);
+  }
+  const json = await res.json();
+  return json.data as Recommendation;
+}
+
+export async function deleteRecommendation(id: string): Promise<void> {
+  const res = await fetch(apiUrl(`/v1/recommendations/${id}`), {
+    method: "DELETE",
+    headers: await getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error ?? `Failed to delete recommendation (${res.status})`);
+  }
 }
