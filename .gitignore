@@ -4,6 +4,7 @@
 node_modules/
 tsconfig.tsbuildinfo
 .next/
+.npm-cache/
 .pnpm-store/
 .supabase/
 supabase/.temp/
