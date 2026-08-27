@@ -2,6 +2,8 @@
 .env.*
 !.env.example
 node_modules/
+tsconfig.tsbuildinfo
+.next/
 .pnpm-store/
 .supabase/
 supabase/.temp/
