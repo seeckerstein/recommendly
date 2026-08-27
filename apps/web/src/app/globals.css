@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+:root {
+  --color-accent: #c2410c; /* editorial burnt sienna */
+  --font-display: "Georgia", "Times New Roman", serif;
+}
+
+@theme inline {
+  --font-serif: var(--font-display);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}

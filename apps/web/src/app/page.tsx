@@ -1,5 +1,8 @@
-import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
+import { AppShell } from "@/components/nav/AppShell";
+import { Page, PageTitle } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default async function HomePage() {
   const supabase = await createSupabaseServerClient();
@@ -10,23 +13,17 @@ export default async function HomePage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-16">
-      <p className="text-sm uppercase tracking-widest text-neutral-400">Recommendly</p>
-      <h1 className="mt-2 text-4xl font-semibold tracking-tight">
-        Signed in as {user.email}
-      </h1>
-      <p className="mt-6 max-w-prose text-lg leading-relaxed text-neutral-600">
-        You are authenticated. This is the protected app shell. Feed, discovery,
-        and recommendations will be added in later checkpoints.
-      </p>
-      <form action="/auth/logout" method="post" className="mt-10">
-        <button
-          type="submit"
-          className="rounded-md border border-neutral-300 bg-white px-5 py-2.5 text-sm font-medium shadow-sm transition hover:bg-neutral-100"
-        >
-          Sign out
-        </button>
-      </form>
-    </main>
+    <AppShell>
+      <Page>
+        <PageTitle eyebrow="Home">Your recommendations</PageTitle>
+        <div className="mt-8">
+          <EmptyState
+            icon="◎"
+            title="Nothing here yet"
+            description={user.email ?? "Your network will appear here."}
+          />
+        </div>
+      </Page>
+    </AppShell>
   );
 }
