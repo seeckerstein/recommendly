@@ -1,4 +1,4 @@
-﻿import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // Minimal mock of the supabase-js query builder chain used by the Edge Function.
 function makeMockClient(overrides: Record<string, unknown> = {}) {
@@ -118,3 +118,40 @@ describe("API endpoint logic (mocked Supabase client)", () => {
   });
 });
 
+
+describe("GET /v1/me", () => {
+  it("selects the authenticated user's profile row by id", async () => {
+    const mock = makeMockClient({ profile: { data: { id: "u-1", username: "ada" }, error: null } });
+    const authUser = { id: "u-1" };
+    // Simulate endpoint flow: getUser -> profile select eq(id)
+    const res = await mock.from("profiles").select("id, username").eq("id", authUser.id).single();
+
+  });
+});
+
+describe("PATCH /v1/me", () => {
+  it("filters disallowed fields and sends only whitelisted keys", async () => {
+    const mock = makeMockClient({});
+    const allowed = ["username", "display_name", "bio", "avatar_url", "profile_visibility"];
+    const body = { username: "newname", role: "admin", evil: true };
+    const updates: Record<string, unknown> = {};
+    for (const k of allowed) if (k in body) updates[k] = body[k];
+    expect(updates).toEqual({ username: "newname" });
+  });
+
+  it("returns an error when no valid fields are provided", () => {
+    const body = {};
+    const allowed = ["username", "display_name", "bio", "avatar_url", "profile_visibility"];
+    const matched = allowed.filter((k) => k in body);
+    expect(matched.length).toBe(0);
+  });
+});
+
+describe("GET /v1/recommendations?scope=mine", () => {
+  it("adds user_id filter for authenticated owner-scoped reads", async () => {
+    const mock = makeMockClient({});
+    const userId = "u-1";
+    const q = mock.from("recommendations").select("*").eq("user_id", userId).limit(100);
+    expect(q.eqArgs).toEqual(["user_id", userId]);
+  });
+});

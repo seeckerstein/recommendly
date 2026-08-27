@@ -1,0 +1,7 @@
+{
+  "name": "recommendation-domain",
+  "version": "0.1.0",
+  "private": true,
+  "main": "src/recommendations.ts",
+  "types": "src/recommendations.ts"
+}

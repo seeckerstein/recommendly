@@ -18,6 +18,37 @@ Deno.serve(async (request) => {
 
   const url = new URL(request.url);
 
+  if (request.method === "GET" && url.pathname.endsWith("/v1/me")) {
+    const { data, error } = await client
+      .from("profiles")
+      .select("id, username, display_name, bio, avatar_url, profile_visibility, created_at")
+      .eq("id", (await client.auth.getUser()).data.user?.id ?? "")
+      .single();
+    return json(error ? { error: error.message } : { data }, error ? 400 : 200);
+  }
+
+  if (request.method === "PATCH" && url.pathname.endsWith("/v1/me")) {
+    let body;
+    try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
+
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) return json({ error: "Invalid authentication token" }, 401);
+
+    const allowed = ["username", "display_name", "bio", "avatar_url", "profile_visibility"];
+    const updates: Record<string, unknown> = {};
+    for (const key of allowed) {
+      if (key in body) updates[key] = body[key];
+    }
+    if (Object.keys(updates).length === 0) return json({ error: "No valid fields to update" }, 400);
+
+    const { data, error } = await client
+      .from("profiles")
+      .update(updates)
+      .eq("id", user.id)
+      .select()
+      .single();
+    return json(error ? { error: error.message } : { data }, error ? 400 : 200);
+  }
   if (request.method === "GET" && url.pathname.endsWith("/v1/recommendations")) {
     const query = url.searchParams.get("q");
     if (query) {
@@ -25,6 +56,18 @@ Deno.serve(async (request) => {
         .from("recommendations")
         .select("*")
         .or(`comment.fts.${query},title.fts.${query}`)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      return json(error ? { error: error.message } : { data }, error ? 400 : 200);
+    }
+
+    if (url.searchParams.get("scope") === "mine") {
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) return json({ error: "Invalid authentication token" }, 401);
+      const { data, error } = await client
+        .from("recommendations")
+        .select("*")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(100);
       return json(error ? { error: error.message } : { data }, error ? 400 : 200);

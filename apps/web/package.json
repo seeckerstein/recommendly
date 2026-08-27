@@ -1,24 +1,25 @@
 {
-  "name": "web",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@supabase/ssr": "^0.6.1",
-    "@supabase/supabase-js": "^2.45.4",
-    "next": "^15.3.3",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.8",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.5",
-    "tailwindcss": "^4.1.8"
-  }
+    "name":  "web",
+    "version":  "0.1.0",
+    "private":  true,
+    "scripts":  {
+                    "dev":  "next dev",
+                    "build":  "next build",
+                    "start":  "next start",
+                    "typecheck":  "tsc --noEmit"
+                },
+    "dependencies":  {
+                         "@supabase/ssr":  "^0.6.1",
+                         "@supabase/supabase-js":  "^2.45.4",
+                         "next":  "^15.3.3",
+                         "react":  "^19.1.0",
+                         "react-dom":  "^19.1.0",
+                         "recommendation-domain":  "workspace:*"
+                     },
+    "devDependencies":  {
+                            "@tailwindcss/postcss":  "^4.1.8",
+                            "@types/react":  "^19.2.18",
+                            "@types/react-dom":  "^19.2.5",
+                            "tailwindcss":  "^4.1.8"
+                        }
 }
