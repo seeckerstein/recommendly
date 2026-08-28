@@ -199,5 +199,201 @@ Deno.serve(async (request) => {
     return json(error ? { error: error.message } : { data }, error ? 400 : 201);
   }
 
+
+  // ---------------------------------------------------------------------------
+  // People discovery: GET /v1/users?q=
+  // ---------------------------------------------------------------------------
+  if (request.method === "GET" && url.pathname.endsWith("/v1/users")) {
+    const q = url.searchParams.get("q")?.trim() ?? "";
+    if (!q) return json({ error: "Search query is required" }, 400);
+
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) return json({ error: "Invalid authentication token" }, 401);
+
+    const { data, error } = await client
+      .from("profiles")
+      .select("id, username, display_name, bio, avatar_url, profile_visibility")
+      .or(`username.ilike.%${q}%,display_name.ilike.%${q}%`)
+      .neq("id", user.id)
+      .limit(20);
+    return json(error ? { error: error.message } : { data }, error ? 400 : 200);
+  }
+
+  // ---------------------------------------------------------------------------
+  // User detail: GET /v1/users/:userId
+  // ---------------------------------------------------------------------------
+  const userMatch = url.pathname.match(/\/v1\/users\/([0-9a-f-]+)$/);
+  if (request.method === "GET" && userMatch) {
+    const targetUserId = userMatch[1];
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) return json({ error: "Invalid authentication token" }, 401);
+
+    const { data: profile, error: profileError } = await client
+      .from("profiles")
+      .select("id, username, display_name, bio, avatar_url, profile_visibility")
+      .eq("id", targetUserId)
+      .single();
+    if (profileError || !profile) return json({ error: "User not found" }, 404);
+
+    if (user.id === targetUserId) {
+      return json({ data: { ...profile, relationship: "SELF" } }, 200);
+    }
+
+    // Determine relationship state
+    const { data: sub } = await client
+      .from("subscriptions")
+      .select("id, status")
+      .eq("subscriber_id", user.id)
+      .eq("publisher_id", targetUserId)
+      .maybeSingle();
+
+    let relationship = "NOT_CONNECTED";
+    if (sub) relationship = sub.status;
+    return json({ data: { ...profile, relationship, subscription_id: sub?.id ?? null } }, 200);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Subscriptions: GET /v1/subscriptions?type=
+  // ---------------------------------------------------------------------------
+  if (request.method === "GET" && url.pathname.endsWith("/v1/subscriptions")) {
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) return json({ error: "Invalid authentication token" }, 401);
+
+    const type = url.searchParams.get("type") ?? "following";
+    let query = client
+      .from("subscriptions")
+      .select("id, status, subscriber_id, publisher_id, requested_at, approved_at, profiles!subscriptions_publisher_id_fkey(id, username, display_name, avatar_url)");
+
+    if (type === "subscribers") {
+      query = query.eq("publisher_id", user.id);
+    } else if (type === "pending_in") {
+      query = query.eq("publisher_id", user.id).eq("status", "PENDING");
+    } else if (type === "pending_out") {
+      query = query.eq("subscriber_id", user.id).eq("status", "PENDING");
+    } else {
+      query = query.eq("subscriber_id", user.id);
+    }
+
+    const { data, error } = await query;
+    return json(error ? { error: error.message } : { data }, error ? 400 : 200);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Request subscription: POST /v1/subscriptions
+  // ---------------------------------------------------------------------------
+  if (request.method === "POST" && url.pathname.endsWith("/v1/subscriptions")) {
+    let body;
+    try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
+    const publisherId = body?.publisher_id;
+    if (!publisherId) return json({ error: "publisher_id is required" }, 400);
+
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) return json({ error: "Invalid authentication token" }, 401);
+    if (user.id === publisherId) return json({ error: "Cannot subscribe to yourself" }, 400);
+
+    const { data, error } = await client.rpc("request_subscription", { target_publisher_id: publisherId });
+    if (error) {
+      const msg = error.message;
+      const status = msg.includes("already pending or approved") ? 409 : 400;
+      return json({ error: msg }, status);
+    }
+
+    // Insert notification for the publisher
+    const { error: notifError } = await client.from("notifications").insert({
+      user_id: publisherId,
+      type: "subscription_request",
+      actor_user_id: user.id,
+      reference_type: "subscription",
+      reference_id: data.id,
+    });
+    if (notifError) console.error("notification insert failed:", notifError.message);
+
+    return json({ data }, 201);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Transition subscription: PATCH /v1/subscriptions/:id
+  // ---------------------------------------------------------------------------
+  const subIdMatch = url.pathname.match(/\/v1\/subscriptions\/([0-9a-f-]+)$/);
+  if (request.method === "PATCH" && subIdMatch) {
+    const subId = subIdMatch[1];
+    let body;
+    try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
+    const nextStatus = body?.status;
+    if (!nextStatus || !["APPROVED", "REJECTED", "REVOKED"].includes(nextStatus)) {
+      return json({ error: "Invalid status. Must be APPROVED, REJECTED, or REVOKED." }, 400);
+    }
+
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) return json({ error: "Invalid authentication token" }, 401);
+
+    const { data, error } = await client.rpc("transition_subscription", { subscription_id: subId, next_status: nextStatus });
+    if (error) return json({ error: error.message }, 400);
+
+    // Insert notification for the subscriber (the other party)
+    const actorId = nextStatus === "REVOKED" ? user.id : data.publisher_id;
+    const notifyUserId = nextStatus === "REVOKED" ? data.publisher_id : data.subscriber_id;
+    const notifType = nextStatus === "APPROVED" ? "subscription_approved" : nextStatus === "REJECTED" ? "subscription_rejected" : "access_revoked";
+    const { error: notifError } = await client.from("notifications").insert({
+      user_id: notifyUserId,
+      type: notifType,
+      actor_user_id: user.id,
+      reference_type: "subscription",
+      reference_id: data.id,
+    });
+    if (notifError) console.error("notification insert failed:", notifError.message);
+
+    return json({ data }, 200);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Unsubscribe: DELETE /v1/subscriptions/:publisherId
+  // ---------------------------------------------------------------------------
+  const unsubMatch = url.pathname.match(/\/v1\/subscriptions\/([0-9a-f-]+)\/unsubscribe$/);
+  if (request.method === "DELETE" && unsubMatch) {
+    const publisherId = unsubMatch[1];
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) return json({ error: "Invalid authentication token" }, 401);
+
+    const { data, error } = await client.rpc("unsubscribe", { target_publisher_id: publisherId });
+    if (error) return json({ error: error.message }, 400);
+    return json({ data }, 200);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Notifications: GET /v1/notifications
+  // ---------------------------------------------------------------------------
+  if (request.method === "GET" && url.pathname.endsWith("/v1/notifications")) {
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) return json({ error: "Invalid authentication token" }, 401);
+
+    const { data, error } = await client
+      .from("notifications")
+      .select("id, type, actor_user_id, reference_type, reference_id, read_at, created_at, profiles!notifications_actor_user_id_fkey(id, username, display_name, avatar_url)")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    return json(error ? { error: error.message } : { data }, error ? 400 : 200);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Mark notification read: PATCH /v1/notifications/:id/read
+  // ---------------------------------------------------------------------------
+  const notifMatch = url.pathname.match(/\/v1\/notifications\/([0-9a-f-]+)\/read$/);
+  if (request.method === "PATCH" && notifMatch) {
+    const notifId = notifMatch[1];
+    const { data: { user } } = await client.auth.getUser();
+    if (!user) return json({ error: "Invalid authentication token" }, 401);
+
+    const { data, error } = await client
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("id", notifId)
+      .eq("user_id", user.id)
+      .select()
+      .single();
+    return json(error ? { error: error.message } : { data }, error ? 400 : 200);
+  }
+
   return json({ error: "Not found" }, 404);
 });
