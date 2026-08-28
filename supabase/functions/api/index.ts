@@ -1,12 +1,20 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = { "content-type": "application/json" };
+const corsHeaders = {
+  "content-type": "application/json",
+  "access-control-allow-origin": "*",
+  "access-control-allow-headers": "authorization, content-type, apikey, x-client-info",
+  "access-control-allow-methods": "GET, POST, PATCH, DELETE, OPTIONS",
+};
 
 function json(data: unknown, status: number) {
   return new Response(JSON.stringify(data), { status, headers: corsHeaders });
 }
 
 Deno.serve(async (request) => {
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
   const authorization = request.headers.get("Authorization");
   if (!authorization) return json({ error: "Unauthorized" }, 401);
 
@@ -88,8 +96,8 @@ Deno.serve(async (request) => {
     } catch {
       return json({ error: "Invalid JSON body" }, 400);
     }
-    if (!body.category || !body.comment?.trim()) {
-      return json({ error: "category and comment are required" }, 400);
+    if (!body.category || (!body.title?.trim() && !body.comment?.trim())) {
+      return json({ error: "category and a title or comment are required" }, 400);
     }
 
     const { data: { user }, error: userError } = await client.auth.getUser();
@@ -112,7 +120,7 @@ Deno.serve(async (request) => {
       .insert({
         user_id: user.id,
         category_id: category.id,
-        comment: body.comment,
+        comment: body.comment?.trim() ? body.comment.trim() : null,
         title: body.title ?? null,
         rating: body.rating ?? null,
         tags: body.tags ?? [],

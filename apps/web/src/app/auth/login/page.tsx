@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +27,8 @@ export default function LoginPage() {
       return;
     }
 
-    router.replace("/");
+    const redirectedFrom = searchParams.get("redirectedFrom");
+    router.replace(redirectedFrom ?? "/");
     router.refresh();
   }
 
@@ -57,7 +59,7 @@ export default function LoginPage() {
             type="submit" disabled={loading}
             className="w-full rounded-md bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-700 disabled:opacity-50"
           >
-            {loading ? "Signing in…" : "Sign in"}
+            {loading ? "Signing inâ€¦" : "Sign in"}
           </button>
         </form>
         <p className="mt-6 text-sm text-neutral-600">
@@ -68,5 +70,12 @@ export default function LoginPage() {
         </p>
       </div>
     </main>
+  );
+}
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }

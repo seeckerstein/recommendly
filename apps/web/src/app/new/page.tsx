@@ -88,7 +88,7 @@ function NewRecommendationForm() {
       const payload = {
         category,
         category_id,
-        comment: comment.trim(),
+        comment: comment.trim() || undefined,
         title: title.trim() || undefined,
         rating: (rating ?? undefined) as 1 | 2 | 3 | 4 | 5 | undefined,
         tags: tagsInput.split(",").map((t) => t.trim()).filter(Boolean),
@@ -138,8 +138,8 @@ function NewRecommendationForm() {
               </fieldset>
 
               <div>
-                <label htmlFor="title" className="block text-sm font-medium">{titleLabels[category]} (optional)</label>
-                <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+                <label htmlFor="title" className="block text-sm font-medium">{titleLabels[category]} *</label>
+                <Input id="title" value={title} required onChange={(e) => setTitle(e.target.value)} />
               </div>
 
               {(metadataFields[category] ?? []).map(({ key, label, placeholder }) => (
@@ -155,11 +155,9 @@ function NewRecommendationForm() {
               ))}
 
               <div>
-                <label htmlFor="comment" className="block text-sm font-medium">Why do you love it? *</label>
+                <label htmlFor="comment" className="block text-sm font-medium">Why do you love it? (optional)</label>
                 <Textarea
                   id="comment"
-                  required
-                  minLength={1}
                   value={comment}
                   placeholder="A few sentences — what makes it worth someone's time?"
                   onChange={(e) => setComment(e.target.value)}
@@ -188,7 +186,7 @@ function NewRecommendationForm() {
               {loadingEdit && <p className="text-sm text-neutral-500">Loading recommendation…</p>}
 
               <div className="flex items-center gap-3 pt-2">
-                <Button type="submit" variant="accent" disabled={saving || !comment.trim() || loadingEdit}>
+                <Button type="submit" variant="accent" disabled={saving || !title.trim() || loadingEdit}>
                   {saving ? "Saving…" : editId ? "Save changes" : "Share recommendation"}
                 </Button>
                 <ButtonLink href="/mine" variant="ghost">Cancel</ButtonLink>

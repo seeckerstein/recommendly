@@ -11,3 +11,5 @@ supabase/.temp/
 coverage/
 dist/
 .expo/
+.vercel
+.env*

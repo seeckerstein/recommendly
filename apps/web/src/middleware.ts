@@ -7,7 +7,7 @@ const AUTH_ROUTES = ["/auth/login", "/auth/signup"];
 type CookieToSet = { name: string; value: string; options?: Record<string, unknown> };
 
 function isProtected(pathname: string) {
-  if (pathname.startsWith("/auth")) return false;
+  if (pathname.startsWith("/auth") || pathname.startsWith("/oauth")) return false;
   if (pathname.startsWith("/_next") || pathname.startsWith("/favicon")) return false;
   return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
 }

@@ -81,7 +81,7 @@ export const tools = [
             "director/platform for movies, location/cuisine for restaurants).",
         },
       },
-      required: ["category", "comment"],
+      required: ["category"],
     },
   },
   {
@@ -227,9 +227,6 @@ export async function toolCreateRecommendation(
 ) {
   if (!CATEGORY_SLUGS.has(String(args.category))) {
     throw new Error(`Unsupported category: ${args.category}`);
-  }
-  if (typeof args.comment !== "string" || !args.comment.trim()) {
-    throw new Error("A recommendation comment is required.");
   }
   if (args.rating !== undefined && args.rating !== null) {
     const r = Number(args.rating);

@@ -3,6 +3,8 @@
 //
 // Authentication: the MCP client supplies the user's Recommendly access token
 // via the "Authorization: Bearer <access_token>" header on every request.
+// Tokens issued through the Supabase OAuth 2.1 server include a "client_id"
+// claim, which is required so that only OAuth-issued MCP tokens are accepted.
 // Every tool call is executed against the existing Recommendly REST API using
 // that identity, so all authorization and RLS rules remain enforced by the
 // backend. The MCP layer holds no service-role or database credentials.
@@ -35,6 +37,23 @@ function json(data: unknown, status: number, headers: Record<string, string>) {
 }
 
 // ---------------------------------------------------------------------------
+// OAuth 2.1 protected-resource metadata (RFC 9728)
+// ---------------------------------------------------------------------------
+
+const MCP_RESOURCE_URL = `${SUPABASE_URL.replace(/\/$/, "")}/functions/v1/mcp`;
+const AUTH_METADATA_URL = `${SUPABASE_URL.replace(/\/$/, "")}/.well-known/oauth-authorization-server/auth/v1`;
+
+function protectedResourceMetadata() {
+  return {
+    resource: MCP_RESOURCE_URL,
+    authorization_servers: [`${SUPABASE_URL.replace(/\/$/, "")}/auth/v1`],
+    scopes_supported: ["read", "write"],
+    bearer_methods_supported: ["header"],
+    resource_documentation: "https://github.com/recommendly/mcp",
+  };
+}
+
+// ---------------------------------------------------------------------------
 // MCP protocol helpers (JSON-RPC 2.0)
 // ---------------------------------------------------------------------------
 
@@ -51,6 +70,17 @@ function result(id: unknown, result: unknown) {
 
 function error(id: unknown, code: number, message: string) {
   return { jsonrpc: "2.0", id, error: { code, message } };
+}
+
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const payload = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(payload);
+  } catch {
+    return null;
+  }
 }
 
 async function handleMessage(
@@ -115,26 +145,54 @@ Deno.serve(async (request: Request) => {
   }
 
   const url = new URL(request.url);
+  const pathname = url.pathname.replace(/\/$/, "");
 
-  if (request.method === "GET" && url.pathname.endsWith("/mcp")) {
+  // OAuth 2.1 protected-resource metadata (RFC 9728)
+  if (request.method === "GET" && pathname.endsWith("/.well-known/oauth-protected-resource")) {
+    return json(protectedResourceMetadata(), 200, cors);
+  }
+
+  if (request.method === "GET" && pathname.endsWith("/mcp")) {
     return json({ status: "ok", server: SERVER_INFO, protocolVersion: PROTOCOL_VERSION }, 200, cors);
   }
 
-  if (request.method === "DELETE" && url.pathname.endsWith("/mcp")) {
+  if (request.method === "DELETE" && pathname.endsWith("/mcp")) {
     return new Response(null, { status: 204, headers: cors });
   }
 
-  if (request.method !== "POST" || !url.pathname.endsWith("/mcp")) {
+  if (request.method !== "POST" || !pathname.endsWith("/mcp")) {
     return json({ error: "Not found" }, 404, cors);
   }
 
   // Authentication: the MCP client must supply the user's Recommendly access
   // token. This proves identity for every tool call without exposing secrets.
+  // Tokens issued via the Supabase OAuth 2.1 server carry a client_id claim;
+  // web-app session tokens do not, so we require it for MCP access.
   const auth = request.headers.get("Authorization");
   if (!auth?.startsWith("Bearer ")) {
-    return json({ error: "Unauthorized: missing or invalid Authorization header" }, 401, cors);
+    return new Response(null, {
+      status: 401,
+      headers: {
+        ...cors,
+        "WWW-Authenticate": `Bearer resource_metadata="${MCP_RESOURCE_URL}/.well-known/oauth-protected-resource"`,
+      },
+    });
   }
   const accessToken = auth.slice(7).trim();
+
+  const payload = decodeJwtPayload(accessToken);
+  if (!payload) {
+    return new Response(null, {
+      status: 401,
+      headers: {
+        ...cors,
+        "WWW-Authenticate": `Bearer resource_metadata="${MCP_RESOURCE_URL}/.well-known/oauth-protected-resource"`,
+      },
+    });
+  }
+  if (typeof payload.client_id !== "string" || !payload.client_id) {
+    return json({ error: "Forbidden: token is not issued via OAuth for MCP access" }, 403, cors);
+  }
 
   let body: unknown;
   try {
