@@ -47,7 +47,6 @@ function protectedResourceMetadata() {
   return {
     resource: MCP_RESOURCE_URL,
     authorization_servers: [`${SUPABASE_URL.replace(/\/$/, "")}/auth/v1`],
-    scopes_supported: ["read", "write"],
     bearer_methods_supported: ["header"],
     resource_documentation: "https://github.com/recommendly/mcp",
   };

@@ -1,50 +1,126 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
+const AUTH_ERROR_PATTERNS = ["authorization not found", "unauthorized", "forbidden", "invalid token", "session missing", "no_authorization", "expired"];
+
+function isAuthRelatedError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return AUTH_ERROR_PATTERNS.some((p) => lower.includes(p));
+}
+
 function ConsentForm() {
   const searchParams = useSearchParams();
-  const [status, setStatus] = useState<"loading" | "ready" | "approved" | "denied" | "error">("loading");
+  const [status, setStatus] = useState<"loading" | "ready" | "approved" | "denied" | "error" | "redirecting">("loading");
   const [error, setError] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [clientName, setClientName] = useState<string | null>(null);
+  const [authScopes, setAuthScopes] = useState<string[]>([]);
   const [processing, setProcessing] = useState(false);
   const supabase = createSupabaseBrowserClient();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        setUserName(data.user.email ?? "your account");
-        setStatus("ready");
-      } else {
-        const loginUrl = new URL("/auth/login", window.location.origin);
-        if (authorizationId) {
-          loginUrl.searchParams.set("redirectedFrom", `/oauth/consent?authorization_id=${authorizationId}`);
-        }
-        window.location.href = loginUrl.toString();
+    async function init() {
+      const authId = searchParams.get("authorization_id");
+      if (!authId) {
+        setError("Missing authorization request. Please restart the connection from your AI assistant.");
+        setStatus("error");
         return;
       }
-    });
+
+      // Establish/verify session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        // Try refresh before giving up
+        const { data: { session: refreshed } } = await supabase.auth.refreshSession();
+        if (!refreshed?.user) {
+          const loginUrl = new URL("/auth/login", window.location.origin);
+          loginUrl.searchParams.set("redirectedFrom", `/oauth/consent?authorization_id=${authId}`);
+          window.location.href = loginUrl.toString();
+          return;
+        }
+        setUserName(refreshed.user.email ?? "your account");
+      } else {
+        setUserName(session.user.email ?? "your account");
+      }
+
+      // Call getAuthorizationDetails — this binds the pending auth to the user
+      // and returns either authorization details or a redirect (if already consented)
+      const { data, error: authError } = await supabase.auth.oauth.getAuthorizationDetails(authId);
+      if (authError) {
+        setError(authError.message);
+        setStatus("error");
+        return;
+      }
+
+      // Check if the response is a redirect (user already consented for this client+scopes)
+      if (data && "redirect_url" in data && data.redirect_url) {
+        // Already consented — immediately redirect
+        setStatus("redirecting");
+        window.location.href = (data as { redirect_url: string }).redirect_url;
+        return;
+      }
+
+      // Response is authorization details — show consent UI
+      if (data && "client" in data) {
+        const details = data as { client?: { name?: string }, scope?: string };
+        setClientName(details.client?.name ?? "your AI assistant");
+        setAuthScopes(details.scope ? details.scope.split(" ").filter(Boolean) : []);
+      }
+      setStatus("ready");
+    }
+    init();
   }, []);
 
   const authorizationId = searchParams.get("authorization_id");
 
   async function handleAction(approve: boolean) {
     if (!authorizationId) {
-      setError("Missing authorization request. Please restart the connection from your AI assistant.");
+      setError("Missing authorization request.");
       return;
     }
     setProcessing(true);
     setError(null);
     try {
+      // Ensure fresh token
+      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError || !session?.access_token) {
+        throw new Error("Your session has expired. Please sign in again and retry.");
+      }
+
       if (approve) {
-        const { error } = await supabase.auth.oauth.approveAuthorization(authorizationId);
+        let { data, error } = await supabase.auth.oauth.approveAuthorization(authorizationId, { skipBrowserRedirect: true });
+        if (error && isAuthRelatedError(error.message)) {
+          const { data: { session: retrySession } } = await supabase.auth.refreshSession();
+          if (!retrySession?.access_token) throw error;
+          const retry = await supabase.auth.oauth.approveAuthorization(authorizationId, { skipBrowserRedirect: true });
+          error = retry.error;
+          data = retry.data;
+        }
         if (error) throw error;
+        if (data?.redirect_url) {
+          setStatus("redirecting");
+          window.location.href = data.redirect_url;
+          return;
+        }
         setStatus("approved");
       } else {
-        const { error } = await supabase.auth.oauth.denyAuthorization(authorizationId);
+        let { data, error } = await supabase.auth.oauth.denyAuthorization(authorizationId, { skipBrowserRedirect: true });
+        if (error && isAuthRelatedError(error.message)) {
+          const { data: { session: retrySession } } = await supabase.auth.refreshSession();
+          if (!retrySession?.access_token) throw error;
+          const retry = await supabase.auth.oauth.denyAuthorization(authorizationId, { skipBrowserRedirect: true });
+          error = retry.error;
+          data = retry.data;
+        }
         if (error) throw error;
+        if (data?.redirect_url) {
+          setStatus("redirecting");
+          window.location.href = data.redirect_url;
+          return;
+        }
         setStatus("denied");
       }
     } catch (e) {
@@ -56,7 +132,15 @@ function ConsentForm() {
   if (status === "loading") {
     return (
       <main className="mx-auto flex min-h-screen max-w-md items-center justify-center px-6">
-        <p className="text-neutral-500">Checking your sessionâ€¦</p>
+        <p className="text-neutral-500">Checking your session…</p>
+      </main>
+    );
+  }
+
+  if (status === "redirecting") {
+    return (
+      <main className="mx-auto flex min-h-screen max-w-md items-center justify-center px-6">
+        <p className="text-neutral-500">Redirecting…</p>
       </main>
     );
   }
@@ -107,13 +191,25 @@ function ConsentForm() {
       <div className="w-full">
         <p className="text-sm uppercase tracking-widest text-neutral-400">Recommendly</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Connect your AI</h1>
-        <p className="mt-3 text-sm text-neutral-600">
-          Allow your AI assistant to access your Recommendly account so it can find and manage your recommendations.
-        </p>
+        {clientName && (
+          <p className="mt-3 text-sm text-neutral-600">
+            <span className="font-medium">{clientName}</span> is requesting access to your Recommendly account.
+          </p>
+        )}
         {userName && (
           <p className="mt-4 rounded-md bg-neutral-50 px-4 py-3 text-sm">
             Signed in as <span className="font-medium">{userName}</span>
           </p>
+        )}
+        {authScopes.length > 0 && (
+          <div className="mt-4">
+            <p className="text-sm font-medium text-neutral-900">Requested permissions:</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {authScopes.map((s) => (
+                <span key={s} className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-700">{s}</span>
+              ))}
+            </div>
+          </div>
         )}
         <div className="mt-6 space-y-3 text-sm text-neutral-600">
           <p className="font-medium text-neutral-900">Your AI assistant will be able to:</p>
@@ -136,7 +232,7 @@ function ConsentForm() {
             onClick={() => handleAction(true)}
             className="flex-1 rounded-md bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-700 disabled:opacity-50"
           >
-            {processing ? "Connectingâ€¦" : "Allow access"}
+            {processing ? "Connecting…" : "Allow access"}
           </button>
           <button
             type="button"
