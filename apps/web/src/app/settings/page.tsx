@@ -1,4 +1,4 @@
-import { AppShell } from "@/components/nav/AppShell";
+﻿import { AppShell } from "@/components/nav/AppShell";
 import { Page, PageTitle, Card } from "@/components/ui/Card";
 
 export default function SettingsPage() {
@@ -23,6 +23,21 @@ export default function SettingsPage() {
               you and see your recommendations. This setting will be manageable here
               in an upcoming update — for now it defaults to private.
             </p>
+          </Card>
+
+          <Card>
+            <h2 className="text-base font-semibold text-neutral-900">Session</h2>
+            <p className="mt-2 text-sm leading-relaxed text-neutral-600">
+              Sign out of your Recommendly account on this device.
+            </p>
+            <form action="/auth/logout" method="post" className="mt-4">
+              <button
+                type="submit"
+                className="rounded-md border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100"
+              >
+                Log out
+              </button>
+            </form>
           </Card>
 
           <p className="text-xs text-neutral-400">Recommendly keeps things simple. More granular notification and preference options will arrive as the product grows.</p>
