@@ -161,12 +161,15 @@ Deno.serve(async (request) => {
     }
 
     // DELETE - hard delete (supported by RLS owner policy)
-    const { error } = await client
+    const { data: deleted, error } = await client
       .from("recommendations")
       .delete()
       .eq("id", recId)
-      .eq("user_id", user.id);
-    return json(error ? { error: "Not found or not authorized" } : { success: true }, error ? 404 : 200);
+      .eq("user_id", user.id)
+      .select();
+    if (error) return json({ error: "Not found or not authorized" }, 404);
+    if (!deleted || deleted.length === 0) return json({ error: "Not found or not authorized" }, 404);
+    return json({ success: true }, 200);
   }
   const recommendMatch = url.pathname.match(/\/v1\/recommendations\/([0-9a-f-]+)\/recommend$/);
   if (recommendMatch && request.method === "POST") {

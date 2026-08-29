@@ -187,3 +187,4 @@ describe("PATCH /v1/recommendations/:id - category change", () => {
     expect(updates).toEqual({ category_id: "new-cat-uuid" });
   });
 });
+
