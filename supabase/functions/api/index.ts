@@ -215,8 +215,8 @@ Deno.serve(async (request) => {
 
     const { data, error } = await client
       .from("profiles")
-      .select("id, username, display_name, bio, avatar_url, profile_visibility")
-      .or(`username.ilike.%${q}%,display_name.ilike.%${q}%`)
+      .select("id, username, display_name, email, bio, avatar_url, profile_visibility")
+      .or(`email.ilike.%${q}%,display_name.ilike.%${q}%`)
       .neq("id", user.id)
       .limit(20);
     return json(error ? { error: error.message } : { data }, error ? 400 : 200);
@@ -233,7 +233,7 @@ Deno.serve(async (request) => {
 
     const { data: profile, error: profileError } = await client
       .from("profiles")
-      .select("id, username, display_name, bio, avatar_url, profile_visibility")
+      .select("id, username, display_name, email, bio, avatar_url, profile_visibility")
       .eq("id", targetUserId)
       .single();
     if (profileError || !profile) return json({ error: "User not found" }, 404);

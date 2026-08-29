@@ -67,7 +67,7 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
           <Avatar name={profile.display_name} size={56} />
           <div>
             <PageTitle eyebrow="Profile">{profile.display_name}</PageTitle>
-            <p className="text-sm text-neutral-500">@{profile.username}</p>
+            <p className="text-sm text-neutral-500">{profile.email}</p>
           </div>
         </div>
         {profile.bio && <p className="mt-4 max-w-lg text-sm text-neutral-600">{profile.bio}</p>}

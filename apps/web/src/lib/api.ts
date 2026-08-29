@@ -20,7 +20,8 @@ function apiUrl(path: string) {
 
 export interface Profile {
   id: string;
-  username: string;
+  email: string;
+  username?: string;
   display_name: string;
   bio: string | null;
   avatar_url: string | null;
@@ -131,7 +132,8 @@ export async function getCategoryMap(): Promise<Map<string, string>> {
 
 export interface PublicProfile {
   id: string;
-  username: string;
+  email: string;
+  username?: string;
   display_name: string;
   bio: string | null;
   avatar_url: string | null;

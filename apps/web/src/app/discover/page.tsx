@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -35,10 +35,11 @@ export default function DiscoverPage() {
   return (
     <AppShell>
       <Page>
-        <PageTitle eyebrow="Explore">Discover</PageTitle>
+        <PageTitle eyebrow="Explore">Find someone</PageTitle>
+        <p className="mt-2 text-sm text-neutral-600">Search by email address</p>
         <form onSubmit={handleSearch} className="mt-6 max-w-md">
           <div className="flex gap-2">
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or username…" />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="e.g. jane@example.com" type="email" />
             <Button type="submit" disabled={loading || !query.trim()}>Search</Button>
           </div>
         </form>
@@ -58,7 +59,7 @@ export default function DiscoverPage() {
                   <Avatar name={u.display_name} size={44} />
                   <div>
                     <p className="font-medium text-neutral-900">{u.display_name}</p>
-                    <p className="text-sm text-neutral-500">@{u.username}</p>
+                    <p className="text-sm text-neutral-500">{u.email}</p>
                   </div>
                 </Card>
               </Link>
@@ -67,7 +68,7 @@ export default function DiscoverPage() {
         )}
         {!results && !loading && !error && (
           <div className="mt-8">
-            <EmptyState icon="✦" title="Find people" description="Search for people by their name or username to discover recommendations." />
+            <EmptyState icon="✦" title="Find someone" description="Search for people by their email address to discover recommendations." />
           </div>
         )}
       </Page>
