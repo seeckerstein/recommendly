@@ -36,10 +36,10 @@ export default function DiscoverPage() {
     <AppShell>
       <Page>
         <PageTitle eyebrow="Explore">Find someone</PageTitle>
-        <p className="mt-2 text-sm text-neutral-600">Search by email address</p>
+        <p className="mt-2 text-sm text-neutral-600">Search by name or email</p>
         <form onSubmit={handleSearch} className="mt-6 max-w-md">
           <div className="flex gap-2">
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="e.g. jane@example.com" type="email" />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="e.g. jane@example.com" type="text" />
             <Button type="submit" disabled={loading || !query.trim()}>Search</Button>
           </div>
         </form>

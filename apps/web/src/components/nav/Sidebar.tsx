@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { navItems } from "./nav-items";
+import { useUnreadNotifications } from "@/lib/useNotifications";
 
 export function Sidebar() {
   const pathname = usePathname();
+  const unreadCount = useUnreadNotifications();
 
   return (
     <aside
@@ -53,6 +55,7 @@ export function Sidebar() {
       >
         {navItems[0].icon({ className: "size-4" })}
         Activity
+        {unreadCount > 0 && <span className="ml-auto rounded-full bg-red-600 px-2 py-0.5 text-xs font-semibold text-white">{unreadCount}</span>}
       </Link>
     </aside>
   );

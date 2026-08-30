@@ -7,6 +7,7 @@ import { Page, PageTitle, Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Avatar } from "@/components/ui/Avatar";
+import { useUnreadNotifications } from "@/lib/useNotifications";
 import { getNotifications, markNotificationRead, transitionSubscription, type AppNotification } from "@/lib/api";
 
 const typeLabels: Record<string, string> = {
@@ -60,6 +61,7 @@ export default function NotificationsPage() {
   }
 
   const items = notifications ?? [];
+  const pendingRequests = items.filter((n) => n.type === "subscription_request" && !n.read_at);
   const unread = items.filter((n) => !n.read_at);
   const read = items.filter((n) => n.read_at);
 
@@ -67,6 +69,9 @@ export default function NotificationsPage() {
     <AppShell>
       <Page>
         <PageTitle eyebrow="Notifications">Activity</PageTitle>
+        {pendingRequests.length > 0 && (
+          <p className="mt-2 text-sm font-semibold text-red-600">{pendingRequests.length} pending request{pendingRequests.length > 1 ? "s" : ""}</p>
+        )}
         {items.length === 0 && (
           <div className="mt-8">
             <Card><p className="text-sm text-neutral-500">No notifications yet.</p></Card>

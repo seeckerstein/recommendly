@@ -21,8 +21,7 @@ function apiUrl(path: string) {
 export interface Profile {
   id: string;
   email: string;
-  username?: string;
-  display_name: string;
+    display_name: string;
   bio: string | null;
   avatar_url: string | null;
   profile_visibility: "PRIVATE" | "PUBLIC";
@@ -133,8 +132,7 @@ export async function getCategoryMap(): Promise<Map<string, string>> {
 export interface PublicProfile {
   id: string;
   email: string;
-  username?: string;
-  display_name: string;
+    display_name: string;
   bio: string | null;
   avatar_url: string | null;
   profile_visibility: "PRIVATE" | "PUBLIC";
@@ -152,7 +150,7 @@ export interface SubscriptionRecord {
   publisher_id: string;
   requested_at: string;
   approved_at: string | null;
-  profiles: { id: string; username: string; display_name: string; avatar_url: string | null };
+  profiles: { id: string; display_name: string; avatar_url: string | null };
 }
 
 export interface AppNotification {
@@ -163,7 +161,7 @@ export interface AppNotification {
   reference_id: string;
   read_at: string | null;
   created_at: string;
-  profiles: { id: string; username: string; display_name: string; avatar_url: string | null };
+  profiles: { id: string; display_name: string; avatar_url: string | null };
 }
 
 export async function searchUsers(q: string): Promise<PublicProfile[]> {

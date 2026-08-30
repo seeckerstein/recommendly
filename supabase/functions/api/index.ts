@@ -29,7 +29,7 @@ Deno.serve(async (request) => {
   if (request.method === "GET" && url.pathname.endsWith("/v1/me")) {
     const { data, error } = await client
       .from("profiles")
-      .select("id, username, display_name, bio, avatar_url, profile_visibility, created_at")
+      .select("id, display_name, bio, avatar_url, profile_visibility, created_at")
       .eq("id", (await client.auth.getUser()).data.user?.id ?? "")
       .single();
     return json(error ? { error: error.message } : { data }, error ? 400 : 200);
@@ -215,8 +215,8 @@ Deno.serve(async (request) => {
 
     const { data, error } = await client
       .from("profiles")
-      .select("id, username, display_name, email, bio, avatar_url, profile_visibility")
-      .or(`email.ilike.%${q}%,display_name.ilike.%${q}%`)
+      .select("id, email, display_name, bio, avatar_url, profile_visibility")
+      .or(`email.ilike.%${q.trim()}%,display_name.ilike.%${q.trim()}%`)
       .neq("id", user.id)
       .limit(20);
     return json(error ? { error: error.message } : { data }, error ? 400 : 200);
@@ -233,7 +233,7 @@ Deno.serve(async (request) => {
 
     const { data: profile, error: profileError } = await client
       .from("profiles")
-      .select("id, username, display_name, email, bio, avatar_url, profile_visibility")
+      .select("id, display_name, email, bio, avatar_url, profile_visibility")
       .eq("id", targetUserId)
       .single();
     if (profileError || !profile) return json({ error: "User not found" }, 404);
@@ -265,7 +265,7 @@ Deno.serve(async (request) => {
     const type = url.searchParams.get("type") ?? "following";
     let query = client
       .from("subscriptions")
-      .select("id, status, subscriber_id, publisher_id, requested_at, approved_at, profiles!subscriptions_publisher_id_fkey(id, username, display_name, avatar_url)");
+      .select("id, status, subscriber_id, publisher_id, requested_at, approved_at, profiles!subscriptions_publisher_id_fkey(id, display_name, avatar_url)");
 
     if (type === "subscribers") {
       query = query.eq("publisher_id", user.id);
@@ -372,7 +372,7 @@ Deno.serve(async (request) => {
 
     const { data, error } = await client
       .from("notifications")
-      .select("id, type, actor_user_id, reference_type, reference_id, read_at, created_at, profiles!notifications_actor_user_id_fkey(id, username, display_name, avatar_url)")
+      .select("id, type, actor_user_id, reference_type, reference_id, read_at, created_at, profiles!notifications_actor_user_id_fkey(id, display_name, avatar_url)")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50);
