@@ -1,6 +1,6 @@
 ﻿begin;
 create extension if not exists pgtap;
-select plan(23);
+select plan(31);
 
 -- Seed users, profiles, and a private recommendation.
 insert into auth.users (id, aud, role, email) values
@@ -212,6 +212,80 @@ update public.profiles set profile_visibility = 'PRIVATE' where id = '00000000-0
 set local role authenticated;
 select pg_temp._as('00000000-0000-0000-0000-000000000002');
 select is((select count(*) from public.recommendations), 0::bigint, '[llm-as-user] blocked after visibility reverts to PRIVATE and subscription removed');
+
+reset role;
+
+-- ============================================================
+-- SECTION 7: NOTIFICATION RECIPIENT ISOLATION (RLS)
+-- ============================================================
+
+insert into public.notifications (user_id, type, actor_user_id, reference_type, reference_id)
+values
+   ('00000000-0000-0000-0000-000000000001', 'subscription_request', '00000000-0000-0000-0000-000000000002', 'subscription', '00000000-0000-0000-0000-000000000099'),
+  ('00000000-0000-0000-0000-000000000002', 'subscription_approved', '00000000-0000-0000-0000-000000000001', 'subscription', '00000000-0000-0000-0000-000000000099');
+
+set local role authenticated;
+select pg_temp._as('00000000-0000-0000-0000-000000000001');
+select is(
+  (select count(*) from public.notifications),
+  1::bigint,
+  '[notif-rls] User A sees exactly own notification'
+);
+select is(
+  (select count(*) from public.notifications where user_id <> '00000000-0000-0000-0000-000000000001'),
+  0::bigint,
+  '[notif-rls] User A cannot see User B notifications'
+);
+
+select pg_temp._as('00000000-0000-0000-0000-000000000002');
+select is(
+  (select count(*) from public.notifications),
+  1::bigint,
+  '[notif-rls] User B sees exactly own notification'
+);
+select is(
+  (select count(*) from public.notifications where user_id <> '00000000-0000-0000-0000-000000000002'),
+  0::bigint,
+  '[notif-rls] User B cannot see User A notifications'
+);
+
+
+-- authenticated role has INSERT privilege on notifications
+select ok(
+  has_table_privilege('authenticated', 'public.notifications', 'INSERT'),
+  '[notif-grant] authenticated role has INSERT privilege on notifications'
+);
+
+-- User A can create a notification for User B (acting as actor)
+set local role authenticated;
+select pg_temp._as('00000000-0000-0000-0000-000000000001');
+insert into public.notifications (user_id, type, actor_user_id, reference_type, reference_id)
+values ('00000000-0000-0000-0000-000000000002', 'subscription_request', '00000000-0000-0000-0000-000000000001', 'subscription', '00000000-0000-0000-0000-000000000100');
+select is(
+  (select count(*) from public.notifications where user_id = '00000000-0000-0000-0000-000000000002' and actor_user_id = '00000000-0000-0000-0000-000000000001' and type = 'subscription_request'),
+  1::bigint,
+  '[notif-grant] User A can insert notification addressed to User B'
+);
+
+-- User A cannot modify User B notification
+update public.notifications set read_at = now() where user_id = '00000000-0000-0000-0000-000000000002';
+select is(
+  (select count(*) from public.notifications where user_id = '00000000-0000-0000-0000-000000000002' and read_at is not null),
+  0::bigint,
+  '[notif-rls] User A cannot modify User B notification'
+);
+
+-- Lifecycle notification types created correctly
+insert into public.notifications (user_id, type, actor_user_id, reference_type, reference_id)
+values
+  ('00000000-0000-0000-0000-000000000002', 'subscription_approved', '00000000-0000-0000-0000-000000000001', 'subscription', '00000000-0000-0000-0000-000000000101'),
+  ('00000000-0000-0000-0000-000000000002', 'subscription_rejected', '00000000-0000-0000-0000-000000000001', 'subscription', '00000000-0000-0000-0000-000000000102'),
+  ('00000000-0000-0000-0000-000000000002', 'access_revoked', '00000000-0000-0000-0000-000000000001', 'subscription', '00000000-0000-0000-0000-000000000103');
+select is(
+  (select count(*) from public.notifications where user_id = '00000000-0000-0000-0000-000000000002' and type in ('subscription_approved','subscription_rejected','access_revoked')),
+  3::bigint,
+  '[notif-lifecycle] approval/rejection/revocation notifications created'
+);
 
 reset role;
 select * from finish();

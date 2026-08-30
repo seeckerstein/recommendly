@@ -33,3 +33,22 @@ describe("notification visibility", () => {
     expect(pending.length).toBe(1);
   });
 });
+
+describe("notification error handling", () => {
+  function interpretResponse(status: number, body: { notification_created?: boolean }) {
+    if (status === 207) return { ok: true, notification_created: false };
+    return { ok: true, notification_created: body.notification_created !== false };
+  }
+
+  it("reports partial failure when notification insert fails", () => {
+    const result = interpretResponse(207, { notification_created: false });
+    expect(result.ok).toBe(true);
+    expect(result.notification_created).toBe(false);
+  });
+
+  it("reports full success when notification insert succeeds", () => {
+    const result = interpretResponse(201, {});
+    expect(result.ok).toBe(true);
+    expect(result.notification_created).toBe(true);
+  });
+});

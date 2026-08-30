@@ -207,8 +207,10 @@ Deno.serve(async (request) => {
   // People discovery: GET /v1/users?q=
   // ---------------------------------------------------------------------------
   if (request.method === "GET" && url.pathname.endsWith("/v1/users")) {
-    const q = url.searchParams.get("q")?.trim() ?? "";
-    if (!q) return json({ error: "Search query is required" }, 400);
+    const raw = url.searchParams.get("q")?.trim() ?? "";
+    if (!raw) return json({ error: "Search query is required" }, 400);
+    // Escape PostgREST filter special characters to prevent filter injection.
+    const q = raw.replace(/[,.()]/g, (ch) => "\\" + ch);
 
     const { data: { user } } = await client.auth.getUser();
     if (!user) return json({ error: "Invalid authentication token" }, 401);
@@ -216,7 +218,7 @@ Deno.serve(async (request) => {
     const { data, error } = await client
       .from("profiles")
       .select("id, email, display_name, bio, avatar_url, profile_visibility")
-      .or(`email.ilike.%${q.trim()}%,display_name.ilike.%${q.trim()}%`)
+      .or(`email.ilike.*${q}*,display_name.ilike.*${q}*`)
       .neq("id", user.id)
       .limit(20);
     return json(error ? { error: error.message } : { data }, error ? 400 : 200);
@@ -309,8 +311,10 @@ Deno.serve(async (request) => {
       reference_type: "subscription",
       reference_id: data.id,
     });
-    if (notifError) console.error("notification insert failed:", notifError.message);
-
+    if (notifError) {
+      console.error("notification insert failed:", notifError.message);
+      return json({ data, notification_created: false }, 207);
+    }
     return json({ data }, 201);
   }
 
@@ -344,8 +348,10 @@ Deno.serve(async (request) => {
       reference_type: "subscription",
       reference_id: data.id,
     });
-    if (notifError) console.error("notification insert failed:", notifError.message);
-
+    if (notifError) {
+      console.error("notification insert failed:", notifError.message);
+      return json({ data, notification_created: false }, 207);
+    }
     return json({ data }, 200);
   }
 
