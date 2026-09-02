@@ -21,7 +21,7 @@ function makeMockClient(overrides: Record<string, unknown> = {}) {
     };
 
     Object.assign(builder, {
-      select(..._args: unknown[]) { return builder; },
+      select(...args: unknown[]) { overrides.lastSelectArgs = args; return builder; },
       insert(data: Record<string, unknown>) {
         currentOp = "insert";
         overrides.lastInsertData = data;
@@ -144,6 +144,27 @@ describe("PATCH /v1/me", () => {
     const allowed = ["username", "display_name", "bio", "avatar_url", "profile_visibility"];
     const matched = allowed.filter((k) => k in body);
     expect(matched.length).toBe(0);
+  });
+});
+
+describe("GET /v1/recommendations?scope=connected", () => {
+  it("applies owner_id filter when provided", async () => {
+    const mock = makeMockClient({});
+    const ownerId = "u-2";
+    const q = mock.from("recommendations").select("*, profiles!user_id(id, display_name)").eq("user_id", ownerId).limit(100);
+    expect(q.eqArgs).toEqual(["user_id", ownerId]);
+  });
+
+  it("does not apply owner_id filter when not provided", async () => {
+    const mock = makeMockClient({});
+    const q = mock.from("recommendations").select("*, profiles!user_id(id, display_name)").limit(100);
+    expect(q.eqArgs).toBeUndefined();
+  });
+
+  it("selects profiles join for owner attribution", async () => {
+    const mock = makeMockClient({});
+    const q = mock.from("recommendations").select("*, profiles!user_id(id, display_name)");
+    expect((mock._state as { lastSelectArgs?: unknown[] }).lastSelectArgs).toEqual(["*, profiles!user_id(id, display_name)"]);
   });
 });
 

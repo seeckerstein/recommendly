@@ -81,6 +81,25 @@ Deno.serve(async (request) => {
       return json(error ? { error: error.message } : { data }, error ? 400 : 200);
     }
 
+    if (url.searchParams.get("scope") === "connected") {
+      const ownerId = url.searchParams.get("owner_id");
+      let recQuery = client
+        .from("recommendations")
+        .select("*, profiles!user_id(id, display_name)")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (ownerId) {
+        recQuery = recQuery.eq("user_id", ownerId);
+      }
+      const { data, error } = await recQuery;
+      const recs = (data ?? []).map((r: Record<string, unknown>) => {
+        const profiles = r.profiles as { id: string; display_name: string } | null;
+        const { profiles: _, ...rest } = r;
+        return { ...rest, owner_id: profiles?.id ?? null, owner_name: profiles?.display_name ?? null };
+      });
+      return json(error ? { error: error.message } : { data: recs }, error ? 400 : 200);
+    }
+
     const { data, error } = await client
       .from("recommendations")
       .select("*")

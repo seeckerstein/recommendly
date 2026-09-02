@@ -32,11 +32,13 @@ const metadataLabels: Record<string, { key: string; label: string }[]> = {
 export function RecommendationCard({
   recommendation,
   categoryName,
+  ownerName,
   onEdit,
   onDelete,
 }: {
   recommendation: Recommendation;
   categoryName?: string;
+  ownerName?: string;
   onEdit?: (r: Recommendation) => void;
   onDelete?: (r: Recommendation) => void;
 }) {
@@ -48,6 +50,7 @@ export function RecommendationCard({
     <Card className="relative flex flex-col gap-3">
       <div className="flex items-start justify-between">
         <span className="text-xs font-medium uppercase tracking-widest text-neutral-400">{catLabel}</span>
+        {ownerName && <span className="text-xs text-neutral-500">by {ownerName}</span>}
 
         {(onEdit || onDelete) && (
           <div className="relative -mt-1 -mr-2">

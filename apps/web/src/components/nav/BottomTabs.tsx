@@ -15,7 +15,7 @@ export function BottomTabs() {
       className="fixed inset-x-0 bottom-0 z-40 grid grid-flow-col auto-cols-fr border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       {mobileItems.map((item) => {
-        const active = pathname === item.href;
+        const active = item.href === "/" ? pathname === "/" : pathname === item.href || (item.href === "/discover" && pathname.startsWith("/discover/"));
         const accent = item.accent;
         return (
           <Link

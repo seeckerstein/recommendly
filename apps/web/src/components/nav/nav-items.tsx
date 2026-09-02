@@ -20,7 +20,7 @@ export const navItems: NavItem[] = [
   },
   {
     href: "/discover",
-    label: "Discover",
+    label: "Find People",
     mobile: true,
     icon: ({ className }) => (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -33,6 +33,14 @@ export const navItems: NavItem[] = [
     accent: true,
     icon: ({ className }) => (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className={className}><path d="M12 5v14M5 12h14"/></svg>
+    ),
+  },
+  {
+    href: "/discover-recommendations",
+    label: "Discover Recommendations",
+    mobile: true,
+    icon: ({ className }) => (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M4 6h16M4 12h10M4 18h7"/></svg>
     ),
   },
   {

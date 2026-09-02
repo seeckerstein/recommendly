@@ -5,6 +5,8 @@ import { AppShell } from "@/components/nav/AppShell";
 import { Page, PageTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
+import { RecommendationCard } from "@/components/ui/RecommendationCard";
+import { fetchDiscoverRecommendations, type Recommendation } from "@/lib/api";
 import { getUserProfile, requestSubscription, unsubscribeFrom, type UserProfile } from "@/lib/api";
 
 const relationshipLabels: Record<string, string> = {
@@ -24,9 +26,15 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [recs, setRecs] = useState<Recommendation[] | null>(null);
+  const [recsLoading, setRecsLoading] = useState(true);
 
   useEffect(() => {
     getUserProfile(userId).then(setProfile).catch((e) => setError(e.message)).finally(() => setLoading(false));
+  }, [userId]);
+
+  useEffect(() => {
+    fetchDiscoverRecommendations(userId).then(setRecs).catch(() => setRecs([])).finally(() => setRecsLoading(false));
   }, [userId]);
 
   async function handleAction(action: "request" | "unsubscribe") {
@@ -95,6 +103,19 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
               {actionLoading ? "Sending…" : "Request access again"}
             </Button>
           )}
+        </div>
+
+        <div className="mt-8">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-400">Recommendations</h2>
+          {recsLoading && <p className="mt-4 text-sm text-neutral-500">Loading recommendations…</p>}
+          {!recsLoading && recs && recs.length === 0 && (
+            <p className="mt-4 text-sm text-neutral-500">No recommendations visible from this person yet.</p>
+          )}
+          {recs?.map((r) => (
+            <div key={r.id} className="mt-4">
+              <RecommendationCard recommendation={r} ownerName={r.owner_name} />
+            </div>
+          ))}
         </div>
       </Page>
     </AppShell>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -35,7 +35,7 @@ export default function DiscoverPage() {
   return (
     <AppShell>
       <Page>
-        <PageTitle eyebrow="Explore">Find someone</PageTitle>
+        <PageTitle eyebrow="Explore">Find People</PageTitle>
         <p className="mt-2 text-sm text-neutral-600">Search by name or email</p>
         <form onSubmit={handleSearch} className="mt-6 max-w-md">
           <div className="flex gap-2">

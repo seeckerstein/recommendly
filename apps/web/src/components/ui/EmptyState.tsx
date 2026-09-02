@@ -4,7 +4,9 @@ export function EmptyState({
   icon,
   title,
   description,
+  children,
 }: {
+  children?: ReactNode;
   icon?: ReactNode;
   title: string;
   description?: string;
@@ -16,6 +18,7 @@ export function EmptyState({
       {description && (
         <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-neutral-600">{description}</p>
       )}
+      {children}
     </div>
   );
 }
