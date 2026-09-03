@@ -87,7 +87,7 @@ Deno.serve(async (request) => {
       if (!user) return json({ error: "Invalid authentication token" }, 401);
       let recQuery = client
         .from("recommendations")
-        .select("*, profiles!user_id(id, display_name)")
+        .select("*, profiles!user_id(id, display_name, email)")
         .neq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(100);
@@ -96,9 +96,9 @@ Deno.serve(async (request) => {
       }
       const { data, error } = await recQuery;
       const recs = (data ?? []).map((r: Record<string, unknown>) => {
-        const profiles = r.profiles as { id: string; display_name: string } | null;
+        const profiles = r.profiles as { id: string; display_name: string; email: string } | null;
         const { profiles: _, ...rest } = r;
-        return { ...rest, owner_id: profiles?.id ?? null, owner_name: profiles?.display_name ?? null };
+        return { ...rest, owner_id: profiles?.id ?? null, owner_name: profiles?.display_name ?? null, owner_email: profiles?.email ?? null };
       });
       return json(error ? { error: error.message } : { data: recs }, error ? 400 : 200);
     }

@@ -47,6 +47,8 @@ export const tools = [
     name: "get_connected_recommendations",
     description:
       "List recommendations from other people the authenticated Recommendly user is authorized to view (connected/approved people). " +
+      "owner_name identifies who made each recommendation; owner_email can disambiguate people who share the same display name. " +
+      "owner_id is an internal identifier and should not normally be shown to the user. " +
       "Supports optional owner_id to narrow to one person, category (book, movie, restaurant), free-text search, and a result limit. " +
       "Use this when the user asks for recommendations from people they follow or are connected to. " +
       "owner_id is a filter, not an authorization mechanism; only recommendations already authorized by Recommendly permissions are returned. Does not include the user's own recommendations (use get_my_recommendations for those). " +
@@ -373,6 +375,7 @@ export async function toolGetConnectedRecommendations(
     ...cleanRecommendation(r),
     owner_id: r.owner_id ?? null,
     owner_name: r.owner_name ?? null,
+    owner_email: r.owner_email ?? null,
   }));
 }
 export const toolHandlers: Record<string, (accessToken: string, args: Record<string, unknown>) => Promise<unknown>> = {

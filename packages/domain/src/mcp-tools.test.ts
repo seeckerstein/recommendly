@@ -81,7 +81,8 @@ describe("get_connected_recommendations", () => {
   it("calls scope=connected and returns owner attribution (self-exclusion is API-level)", async () => {
     apiCalls.length = 0;
     nextResponse = { status: 200, body: { data: [
-      { id: "00000000-0000-4000-8000-000000000002", category_id: "cat-movie", title: "Film", comment: "Great film", rating: 4, tags: [], metadata: {}, owner_id: "u-2", owner_name: "Sarah", created_at: "2024-02-01T00:00:00Z" },
+      { id: "00000000-0000-4000-8000-000000000002", category_id: "cat-movie", title: "Film", comment: "Great film", rating: 4, tags: [], metadata: {}, owner_id: "u-2", owner_name: "Sarah", owner_email: "sarah@example.com", created_at: "2024-02-01T00:00:00Z" },
+      { id: "00000000-0000-4000-8000-000000000003", category_id: "cat-movie", title: "Film 2", comment: "Another", rating: 3, tags: [], metadata: {}, owner_id: "u-3", owner_name: "Sarah", owner_email: "sarah2@example.com", created_at: "2024-02-02T00:00:00Z" },
     ] } };
 
     const result = await toolHandlers.get_connected_recommendations("token", {});
@@ -89,7 +90,8 @@ describe("get_connected_recommendations", () => {
     expect(apiCalls[0].init.headers).toMatchObject({ Authorization: "Bearer token" });
 
     expect(result).toEqual([
-      expect.objectContaining({ owner_id: "u-2", owner_name: "Sarah", category: "movie" }),
+      expect.objectContaining({ owner_id: "u-2", owner_name: "Sarah", owner_email: "sarah@example.com", category: "movie" }),
+      expect.objectContaining({ owner_id: "u-3", owner_name: "Sarah", owner_email: "sarah2@example.com", category: "movie" }),
     ]);
   });
 
