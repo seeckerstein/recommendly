@@ -46,10 +46,10 @@ export const tools = [
   {
     name: "get_connected_recommendations",
     description:
-      "List recommendations from people the authenticated Recommendly user is authorized to view (connected/approved people). " +
+      "List recommendations from other people the authenticated Recommendly user is authorized to view (connected/approved people). " +
       "Supports optional owner_id to narrow to one person, category (book, movie, restaurant), free-text search, and a result limit. " +
       "Use this when the user asks for recommendations from people they follow or are connected to. " +
-      "owner_id is a filter, not an authorization mechanism; only recommendations already authorized by Recommendly permissions are returned. " +
+      "owner_id is a filter, not an authorization mechanism; only recommendations already authorized by Recommendly permissions are returned. Does not include the user's own recommendations (use get_my_recommendations for those). " +
       "Use get_my_recommendations for the user's own recommendations.",
     inputSchema: {
       type: "object",
@@ -346,6 +346,7 @@ export async function toolGetConnectedRecommendations(
     throw new Error(`Recommendly API error (${status})`);
   }
   let recs = ((body as { data?: unknown[] }).data ?? []) as Record<string, unknown>[];
+
 
   const catRes = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/categories?select=id,slug`, {
     headers: apiHeaders(accessToken, { apikey: Deno.env.get("SUPABASE_ANON_KEY")! }),

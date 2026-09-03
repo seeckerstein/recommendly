@@ -83,9 +83,12 @@ Deno.serve(async (request) => {
 
     if (url.searchParams.get("scope") === "connected") {
       const ownerId = url.searchParams.get("owner_id");
+      const { data: { user } } = await client.auth.getUser();
+      if (!user) return json({ error: "Invalid authentication token" }, 401);
       let recQuery = client
         .from("recommendations")
         .select("*, profiles!user_id(id, display_name)")
+        .neq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(100);
       if (ownerId) {

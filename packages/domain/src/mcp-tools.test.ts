@@ -78,7 +78,7 @@ describe("get_connected_recommendations", () => {
     ]);
   });
 
-  it("calls scope=connected and returns owner attribution", async () => {
+  it("calls scope=connected and returns owner attribution (self-exclusion is API-level)", async () => {
     apiCalls.length = 0;
     nextResponse = { status: 200, body: { data: [
       { id: "00000000-0000-4000-8000-000000000002", category_id: "cat-movie", title: "Film", comment: "Great film", rating: 4, tags: [], metadata: {}, owner_id: "u-2", owner_name: "Sarah", created_at: "2024-02-01T00:00:00Z" },
