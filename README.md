@@ -22,3 +22,35 @@ Never connect development MCP tooling to production. Commit every schema change 
 - `supabase/tests`: permission and privacy integration tests
 - `packages/domain`: shared domain contracts and validation
 - `docs`: product, architecture, API, and security decisions
+
+## Connecting Recommendly to Claude
+
+Recommendly is available to Claude as a remote MCP (Model Context Protocol) server. Once connected, you can ask Claude to read and manage your recommendations conversationally.
+
+### Setup
+
+1. In Claude, open **Customize → Connectors**.
+2. Click **+ / Add custom connector**.
+3. Name it **Recommendly**.
+4. Enter the Recommendly MCP server URL: `https://zpjsmuuxgcewmymmdddr.supabase.co/functions/v1/mcp`
+5. Click **Add**.
+6. Authenticate with your Recommendly account when prompted and approve access.
+7. Enable **Recommendly** from the chat's connectors menu.
+
+### What you can ask Claude
+
+- "Show me my recommendations."
+- "Show me recommendations from people I'm connected to."
+- "Show me recommendations from [person]."
+- "Add The Hobbit to my recommendations."
+- "Update my recommendation for The Hobbit."
+
+Claude only receives recommendations you are authorized to access — never anyone else's private data.
+
+## Connecting Recommendly to ChatGPT
+
+ChatGPT can use the same Recommendly remote MCP server (same URL, same OAuth model, same authorization). As of this writing, ChatGPT's custom-connector support may require a Plus/Pro plan or may be in beta — follow ChatGPT's current documentation for adding a custom MCP connector, then use the same server URL above.
+
+## Developer note: WebMCP
+
+WebMCP (browser-native MCP) is considered complementary and future-facing. Recommendly's current architecture uses a hosted remote MCP server, which is intentionally shared across clients (Claude, ChatGPT, future integrations). No WebMCP runtime changes are planned in this checkpoint.

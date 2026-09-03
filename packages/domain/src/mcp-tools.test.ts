@@ -51,9 +51,10 @@ function getTool(name: string) {
 }
 
 describe("MCP tool definitions", () => {
-  it("exposes exactly the three expected tools", () => {
+  it("exposes exactly the four expected tools", () => {
     expect(tools.map((t: { name: string }) => t.name)).toEqual([
       "get_my_recommendations",
+      "get_connected_recommendations",
       "create_recommendation",
       "update_recommendation",
     ]);
@@ -64,6 +65,83 @@ describe("MCP tool definitions", () => {
       expect(t.description.length).toBeGreaterThan(10);
       expect(t.inputSchema.type).toBe("object");
     }
+  });
+});
+
+describe("get_connected_recommendations", () => {
+  it("is exposed as the fourth tool", () => {
+    expect(tools.map((t: { name: string }) => t.name)).toEqual([
+      "get_my_recommendations",
+      "get_connected_recommendations",
+      "create_recommendation",
+      "update_recommendation",
+    ]);
+  });
+
+  it("calls scope=connected and returns owner attribution", async () => {
+    apiCalls.length = 0;
+    nextResponse = { status: 200, body: { data: [
+      { id: "00000000-0000-4000-8000-000000000002", category_id: "cat-movie", title: "Film", comment: "Great film", rating: 4, tags: [], metadata: {}, owner_id: "u-2", owner_name: "Sarah", created_at: "2024-02-01T00:00:00Z" },
+    ] } };
+
+    const result = await toolHandlers.get_connected_recommendations("token", {});
+    expect(apiCalls[0].path).toContain("/v1/recommendations?scope=connected");
+    expect(apiCalls[0].init.headers).toMatchObject({ Authorization: "Bearer token" });
+
+    expect(result).toEqual([
+      expect.objectContaining({ owner_id: "u-2", owner_name: "Sarah", category: "movie" }),
+    ]);
+  });
+
+  it("passes owner_id as a filter parameter", async () => {
+    apiCalls.length = 0;
+    nextResponse = { status: 200, body: { data: [] } };
+
+    await toolHandlers.get_connected_recommendations("token", { owner_id: "u-2" });
+    expect(apiCalls[0].path).toContain("owner_id=u-2");
+  });
+
+  it("does not pass owner_id when not provided", async () => {
+    apiCalls.length = 0;
+    nextResponse = { status: 200, body: { data: [] } };
+
+    await toolHandlers.get_connected_recommendations("token", {});
+    expect(apiCalls[0].path).not.toContain("owner_id");
+  });
+
+  it("filters by category", async () => {
+    apiCalls.length = 0;
+    nextResponse = { status: 200, body: { data: [
+      { id: "00000000-0000-4000-8000-000000000003", category_id: "cat-book", title: "Book", comment: "c", rating: null, tags: [], metadata: {}, owner_id: "u-2", owner_name: "Sarah", created_at: "2024-03-01T00:00:00Z" },
+      { id: "00000000-0000-4000-8000-000000000004", category_id: "cat-restaurant", title: "Place", comment: "c", rating: null, tags: [], metadata: {}, owner_id: "u-3", owner_name: "Bob", created_at: "2024-04-01T00:00:00Z" },
+    ] } };
+
+    const result = await toolHandlers.get_connected_recommendations("token", { category: "book" });
+    expect((result as unknown[]).length).toBe(1);
+    expect((result as { title: string }[])[0].title).toBe("Book");
+  });
+
+  it("filters by search", async () => {
+    apiCalls.length = 0;
+    nextResponse = { status: 200, body: { data: [
+      { id: "00000000-0000-4000-8000-000000000005", category_id: "cat-book", title: "Tuscany", comment: "lovely", rating: null, tags: [], metadata: {}, owner_id: "u-2", owner_name: "Sarah", created_at: "2024-05-01T00:00:00Z" },
+      { id: "00000000-0000-4000-8000-000000000006", category_id: "cat-book", title: "Other", comment: "nothing", rating: null, tags: [], metadata: {}, owner_id: "u-2", owner_name: "Sarah", created_at: "2024-06-01T00:00:00Z" },
+    ] } };
+
+    const result = await toolHandlers.get_connected_recommendations("token", { search: "tuscany" });
+    expect((result as unknown[]).length).toBe(1);
+    expect((result as { title: string }[])[0].title).toBe("Tuscany");
+  });
+
+  it("respects limit", async () => {
+    apiCalls.length = 0;
+    nextResponse = { status: 200, body: { data: Array.from({ length: 30 }, (_, i) => ({
+      id: `00000000-0000-4000-8000-${String(i).padStart(12, "0")}`,
+      category_id: "cat-book", title: `Book ${i}`, comment: "c", rating: null, tags: [], metadata: {}, owner_id: "u-2", owner_name: "Sarah", created_at: "2024-01-01T00:00:00Z",
+    })) } };
+
+    const result = await toolHandlers.get_connected_recommendations("token", { limit: 5 });
+    expect((result as unknown[]).length).toBe(5);
   });
 });
 

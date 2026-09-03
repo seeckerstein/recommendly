@@ -16,7 +16,7 @@ export const tools = [
   {
     name: "get_my_recommendations",
     description:
-      "List the authenticated Recommendly user's own recommendations. " +
+      "List the authenticated Recommendly user's own recommendations (my own recommendations only). " +
       "Supports optional filtering by category (book, movie, restaurant), " +
       "free-text search across title and comment, and a result limit. " +
       "Use this whenever the user asks what they have recommended, to find " +
@@ -44,6 +44,40 @@ export const tools = [
     },
   },
   {
+    name: "get_connected_recommendations",
+    description:
+      "List recommendations from people the authenticated Recommendly user is authorized to view (connected/approved people). " +
+      "Supports optional owner_id to narrow to one person, category (book, movie, restaurant), free-text search, and a result limit. " +
+      "Use this when the user asks for recommendations from people they follow or are connected to. " +
+      "owner_id is a filter, not an authorization mechanism; only recommendations already authorized by Recommendly permissions are returned. " +
+      "Use get_my_recommendations for the user's own recommendations.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        owner_id: {
+          type: "string",
+          format: "uuid",
+          description: "Optional. Narrow results to recommendations by this person (must be someone the user is connected to).",
+        },
+        category: {
+          type: "string",
+          enum: ["book", "movie", "restaurant"],
+          description: "Filter by category. Omit to return all categories.",
+        },
+        search: {
+          type: "string",
+          description: "Free-text search across title and comment.",
+        },
+        limit: {
+          type: "integer",
+          minimum: 1,
+          maximum: 100,
+          description: "Maximum number of recommendations to return (default 20).",
+        },
+      },
+      required: [],
+    },
+  },  {
     name: "create_recommendation",
     description:
       "Create a new recommendation for the authenticated Recommendly user. " +
@@ -296,8 +330,53 @@ export async function toolUpdateRecommendation(
   return data ? [cleanRecommendation(data)] : [];
 }
 
+export async function toolGetConnectedRecommendations(
+  accessToken: string,
+  args: Record<string, unknown>,
+) {
+  const params = new URLSearchParams({ scope: "connected" });
+  if (typeof args.owner_id === "string" && args.owner_id.trim()) {
+    params.set("owner_id", args.owner_id.trim());
+  }
+  if (typeof args.limit === "number" && args.limit > 0) {
+    params.set("limit", String(Math.min(args.limit, 100)));
+  }
+  const { status, body } = await apiFetch(accessToken, `/v1/recommendations?${params.toString()}`);
+  if (status !== 200) {
+    throw new Error(`Recommendly API error (${status})`);
+  }
+  let recs = ((body as { data?: unknown[] }).data ?? []) as Record<string, unknown>[];
+
+  const catRes = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/categories?select=id,slug`, {
+    headers: apiHeaders(accessToken, { apikey: Deno.env.get("SUPABASE_ANON_KEY")! }),
+  });
+  if (catRes.ok) {
+    const cats = (await catRes.json()) as { id: string; slug: string }[];
+    const catMap = new Map(cats.map((c) => [c.id, c.slug]));
+    recs = recs.map((r) => ({ ...r, category_slug: catMap.get(String(r.category_id)) ?? r.category_id }));
+  }
+
+  if (typeof args.category === "string") {
+    recs = recs.filter((r) => r.category_slug === args.category);
+  }
+
+  if (typeof args.search === "string" && args.search.trim()) {
+    const needle = args.search.trim().toLowerCase();
+    recs = recs.filter((r) =>
+      String(r.title ?? "").toLowerCase().includes(needle) ||
+      String(r.comment ?? "").toLowerCase().includes(needle)
+    );
+  }
+
+  return recs.slice(0, typeof args.limit === "number" ? args.limit : 20).map((r) => ({
+    ...cleanRecommendation(r),
+    owner_id: r.owner_id ?? null,
+    owner_name: r.owner_name ?? null,
+  }));
+}
 export const toolHandlers: Record<string, (accessToken: string, args: Record<string, unknown>) => Promise<unknown>> = {
   get_my_recommendations: toolGetMyRecommendations,
+  get_connected_recommendations: toolGetConnectedRecommendations,
   create_recommendation: toolCreateRecommendation,
   update_recommendation: toolUpdateRecommendation,
 };
