@@ -201,6 +201,49 @@ describe("get_my_recommendations", () => {
   });
 });
 
+describe("create_recommendation - series/other (5.7)", () => {
+  it("exposes five categories in the create schema enum", () => {
+    const tool = getTool("create_recommendation");
+    const cat = (tool?.inputSchema as { properties: { category: { enum: string[] } } }).properties.category;
+    expect(cat.enum).toEqual(["book", "movie", "restaurant", "series", "other"]);
+  });
+
+  it("creates a series recommendation with metadata", async () => {
+    apiCalls.length = 0;
+    nextResponse = { status: 201, body: { data: { id: "r-series", category_id: "cat-series", comment: "Great show", created_at: "2024-01-01" } } };
+
+    const result = await toolHandlers.create_recommendation("token", {
+      category: "series",
+      title: "The Rookie",
+      comment: "Great show",
+      rating: 3,
+      metadata: { platform: "ABC" },
+    });
+    const payload = JSON.parse(apiCalls[0].init.body);
+    expect(payload.category).toBe("series");
+    expect(payload.title).toBe("The Rookie");
+    expect(payload.metadata).toEqual({ platform: "ABC" });
+    expect(payload.metadata.title).toBeUndefined();
+    expect(result[0].id).toBe("r-series");
+  });
+
+  it("creates an other recommendation with type metadata", async () => {
+    apiCalls.length = 0;
+    nextResponse = { status: 201, body: { data: { id: "r-other", category_id: "cat-other", comment: "Nice", created_at: "2024-01-01" } } };
+
+    const result = await toolHandlers.create_recommendation("token", {
+      category: "other",
+      title: "A podcast",
+      comment: "Great",
+      metadata: { type: "podcast" },
+    });
+    const payload = JSON.parse(apiCalls[0].init.body);
+    expect(payload.category).toBe("other");
+    expect(payload.metadata).toEqual({ type: "podcast" });
+    expect(payload.title).toBe("A podcast");
+  });
+});
+
 describe("create_recommendation", () => {
   it("posts to the recommendations endpoint and returns the created recommendation", async () => {
     apiCalls.length = 0;

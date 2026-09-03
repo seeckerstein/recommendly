@@ -10,14 +10,14 @@ export const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 // Tool definitions
 // ---------------------------------------------------------------------------
 
-const CATEGORY_DESCRIPTION = "One of: book, movie, restaurant.";
+const CATEGORY_DESCRIPTION = "One of: book, movie, restaurant, series, other.";
 
 export const tools = [
   {
     name: "get_my_recommendations",
     description:
       "List the authenticated Recommendly user's own recommendations (my own recommendations only). " +
-      "Supports optional filtering by category (book, movie, restaurant), " +
+      "Supports optional filtering by category (book, movie, restaurant, series, other), " +
       "free-text search across title and comment, and a result limit. " +
       "Use this whenever the user asks what they have recommended, to find " +
       "a specific recommendation, or to look something up before editing it.",
@@ -26,7 +26,7 @@ export const tools = [
       properties: {
         category: {
           type: "string",
-          enum: ["book", "movie", "restaurant"],
+          enum: ["book", "movie", "restaurant", "series", "other"],
           description: "Filter by category. Omit to return all categories.",
         },
         search: {
@@ -49,7 +49,7 @@ export const tools = [
       "List recommendations from other people the authenticated Recommendly user is authorized to view (connected/approved people). " +
       "owner_name identifies who made each recommendation; owner_email can disambiguate people who share the same display name. " +
       "owner_id is an internal identifier and should not normally be shown to the user. " +
-      "Supports optional owner_id to narrow to one person, category (book, movie, restaurant), free-text search, and a result limit. " +
+      "Supports optional owner_id to narrow to one person, category (book, movie, restaurant, series, other), free-text search, and a result limit. " +
       "Use this when the user asks for recommendations from people they follow or are connected to. " +
       "owner_id is a filter, not an authorization mechanism; only recommendations already authorized by Recommendly permissions are returned. Does not include the user's own recommendations (use get_my_recommendations for those). " +
       "Use get_my_recommendations for the user's own recommendations.",
@@ -63,7 +63,7 @@ export const tools = [
         },
         category: {
           type: "string",
-          enum: ["book", "movie", "restaurant"],
+          enum: ["book", "movie", "restaurant", "series", "other"],
           description: "Filter by category. Omit to return all categories.",
         },
         search: {
@@ -90,7 +90,7 @@ export const tools = [
       properties: {
         category: {
           type: "string",
-          enum: ["book", "movie", "restaurant"],
+          enum: ["book", "movie", "restaurant", "series", "other"],
           description: CATEGORY_DESCRIPTION,
         },
         comment: {
@@ -98,7 +98,7 @@ export const tools = [
           minLength: 1,
           description: "Why the user recommends this. Required.",
         },
-        title: { type: "string", description: "Title of the book/movie/restaurant." },
+        title: { type: "string", description: "The primary display title of the recommendation. Put the item's actual name here, for example 'The Rookie'. Never place the primary title inside metadata." },
         rating: {
           type: "integer",
           minimum: 1,
@@ -138,7 +138,7 @@ export const tools = [
         },
         category: {
           type: "string",
-          enum: ["book", "movie", "restaurant"],
+          enum: ["book", "movie", "restaurant", "series", "other"],
           description: "Change the category if supplied.",
         },
         comment: { type: "string", minLength: 1, description: "Updated comment." },
@@ -156,7 +156,7 @@ export const tools = [
         },
         metadata: {
           type: "object",
-          description: "Updated category-specific metadata.",
+          description: "Updated additional structured attributes. Do not put title, comment, rating, or tags inside metadata.",
         },
       },
       required: ["id"],
@@ -255,7 +255,7 @@ export async function toolGetMyRecommendations(
   return recs.slice(0, typeof args.limit === "number" ? args.limit : 20).map(cleanRecommendation);
 }
 
-export const CATEGORY_SLUGS = new Set(["book", "movie", "restaurant"]);
+export const CATEGORY_SLUGS = new Set(["book", "movie", "restaurant", "series", "other"]);
 
 export async function toolCreateRecommendation(
   accessToken: string,

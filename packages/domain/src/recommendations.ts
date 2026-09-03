@@ -1,4 +1,4 @@
-﻿export const categorySlugs = ["book", "movie", "restaurant"] as const;
+export const categorySlugs = ["book", "movie", "restaurant", "series", "other"] as const;
 export type CategorySlug = (typeof categorySlugs)[number];
 
 export interface CreateRecommendationInput {

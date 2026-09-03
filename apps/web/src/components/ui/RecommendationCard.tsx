@@ -10,6 +10,8 @@ const categoryLabels: Record<string, string> = {
   book: "Book",
   movie: "Movie",
   restaurant: "Restaurant",
+  series: "Series",
+  other: "Other",
 };
 
 const metadataLabels: Record<string, { key: string; label: string }[]> = {
@@ -26,6 +28,18 @@ const metadataLabels: Record<string, { key: string; label: string }[]> = {
   restaurant: [
     { key: "location", label: "Location" },
     { key: "cuisine", label: "Cuisine" },
+  ],
+  series: [
+    { key: "creator", label: "Creator" },
+    { key: "seasons", label: "Seasons" },
+    { key: "platform", label: "Platform" },
+    { key: "genre", label: "Genre" },
+    { key: "year", label: "Year" },
+    { key: "status", label: "Status" },
+  ],
+  other: [
+    { key: "type", label: "Type" },
+    { key: "details", label: "Details" },
   ],
 };
 

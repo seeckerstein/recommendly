@@ -32,12 +32,26 @@ const metadataFields: MetadataKey = {
     { key: "location", label: "Location", placeholder: "City or neighbourhood" },
     { key: "cuisine", label: "Cuisine", placeholder: "e.g. Thai" },
   ],
+  series: [
+    { key: "creator", label: "Creator", placeholder: "e.g. Alexi Hawley" },
+    { key: "seasons", label: "Seasons", placeholder: "e.g. 4" },
+    { key: "platform", label: "Platform", placeholder: "e.g. ABC, Netflix" },
+    { key: "genre", label: "Genre", placeholder: "e.g. Crime drama" },
+    { key: "year", label: "Year", placeholder: "e.g. 2024" },
+    { key: "status", label: "Status", placeholder: "e.g. ongoing, ended" },
+  ],
+  other: [
+    { key: "type", label: "Type", placeholder: "e.g. podcast, course, place" },
+    { key: "details", label: "Details", placeholder: "Any extra details" },
+  ],
 };
 
 const titleLabels: Record<CategorySlug, string> = {
   book: "Book title",
-  movie: "Movie or show title",
+  movie: "Movie title",
   restaurant: "Restaurant name",
+  series: "Series title",
+  other: "Title",
 };
 
 function NewRecommendationForm() {

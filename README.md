@@ -43,6 +43,9 @@ Recommendly is available to Claude as a remote MCP (Model Context Protocol) serv
 - "Show me recommendations from people I'm connected to."
 - "Show me recommendations from [person]."
 - "Add The Hobbit to my recommendations."
+- "Add The Rookie as a series with 3 stars."
+- "Show me series recommendations from my connections."
+- "Add a recommendation for a podcast." (Recommendly will store it under the "other" category with metadata type = podcast.)
 - "Update my recommendation for The Hobbit."
 
 Claude only receives recommendations you are authorized to access — never anyone else's private data.
