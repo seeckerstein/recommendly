@@ -4,6 +4,8 @@ import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { Input, Field } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 function LoginForm() {
   const router = useRouter();
@@ -33,38 +35,58 @@ function LoginForm() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md items-center px-6">
+    <main className="mx-auto flex min-h-dvh max-w-md items-center px-6 py-12">
       <div className="w-full">
-        <p className="text-sm uppercase tracking-widest text-neutral-400">Recommendly</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Sign in</h1>
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium">Email</label>
-            <input
-              id="email" type="email" required value={email} autoComplete="email"
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-faint">
+          Recommendly
+        </p>
+        <h1 className="display mt-3 text-[2.25rem] font-normal leading-[1.1] text-ink">
+          Welcome back.
+        </h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+          Sign in to see what the people you trust are recommending.
+        </p>
+
+        <form onSubmit={handleSubmit} className="mt-9 space-y-5">
+          <Field htmlFor="email" label="Email">
+            <Input
+              id="email"
+              type="email"
+              required
+              value={email}
+              autoComplete="email"
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1.5 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 shadow-sm focus:border-neutral-500 focus:outline-none"
             />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium">Password</label>
-            <input
-              id="password" type="password" required value={password} autoComplete="current-password"
+          </Field>
+
+          <Field htmlFor="password" label="Password">
+            <Input
+              id="password"
+              type="password"
+              required
+              value={password}
+              autoComplete="current-password"
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1.5 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 shadow-sm focus:border-neutral-500 focus:outline-none"
             />
-          </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit" disabled={loading}
-            className="w-full rounded-md bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-700 disabled:opacity-50"
-          >
-            {loading ? "Signing inâ€¦" : "Sign in"}
-          </button>
+          </Field>
+
+          {error && (
+            <p role="alert" className="text-sm text-danger">
+              {error}
+            </p>
+          )}
+
+          <Button type="submit" variant="accent" size="lg" disabled={loading} className="w-full">
+            {loading ? "Signing in…" : "Sign in"}
+          </Button>
         </form>
-        <p className="mt-6 text-sm text-neutral-600">
+
+        <p className="mt-7 text-sm text-ink-soft">
           No account?{" "}
-          <Link href="/auth/signup" className="font-medium underline underline-offset-4 hover:text-neutral-900">
+          <Link
+            href="/auth/signup"
+            className="font-medium text-accent underline underline-offset-4"
+          >
             Sign up
           </Link>
         </p>
@@ -72,6 +94,7 @@ function LoginForm() {
     </main>
   );
 }
+
 export default function LoginPage() {
   return (
     <Suspense fallback={null}>

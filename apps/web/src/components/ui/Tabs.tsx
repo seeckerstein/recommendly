@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+/** Underlined editorial tabs — no pill chrome. */
 export function Tabs({
   items,
   activeHref,
@@ -9,7 +10,7 @@ export function Tabs({
   activeHref: string;
 }) {
   return (
-    <div role="tablist" className="inline-flex rounded-lg bg-neutral-100 p-1">
+    <div role="tablist" className="flex gap-6 border-b border-line">
       {items.map((item) => {
         const active = item.href === activeHref;
         return (
@@ -18,8 +19,10 @@ export function Tabs({
             href={item.href}
             role="tab"
             aria-selected={active}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[--color-accent] ${
-              active ? "bg-white shadow-sm text-neutral-900" : "text-neutral-500 hover:text-neutral-900"
+            className={`-mb-px border-b-2 pb-3 text-sm transition-colors ${
+              active
+                ? "border-accent font-medium text-ink"
+                : "border-transparent text-ink-faint hover:text-ink"
             }`}
           >
             {item.label}

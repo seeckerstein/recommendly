@@ -1,9 +1,10 @@
 import type { ComponentProps } from "react";
 
-export function Textarea({ className = "", ...props }: ComponentProps<"textarea">) {
+export function Textarea({ className = "", rows = 4, ...props }: ComponentProps<"textarea">) {
   return (
     <textarea
-      className={`w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm shadow-sm placeholder:text-neutral-400 focus:border-[--color-accent] focus:outline-none min-h-[96px] resize-y ${className}`}
+      rows={rows}
+      className={`w-full resize-y rounded-xl border border-line-strong bg-surface px-3.5 py-3 text-[15px] leading-relaxed text-ink placeholder:text-ink-faint transition-colors focus:border-accent focus:outline-none ${className}`}
       {...props}
     />
   );

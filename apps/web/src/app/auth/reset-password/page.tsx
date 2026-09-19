@@ -1,8 +1,10 @@
-﻿"use client";
+"use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { AuthShell } from "@/components/ui/AuthShell";
+import { Input, Field } from "@/components/ui/Input";
+import { Button, ButtonLink } from "@/components/ui/Button";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -30,59 +32,60 @@ export default function ResetPasswordPage() {
     setLoading(false);
   }
 
+  if (success) {
+    return (
+      <AuthShell title="Password updated." lede="You can sign in with your new password now.">
+        <ButtonLink href="/auth/login" variant="accent" size="lg">
+          Go to sign in
+        </ButtonLink>
+      </AuthShell>
+    );
+  }
+
+  const mismatch = Boolean(password && confirm && password !== confirm);
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-md items-center px-6">
-      <div className="w-full">
-        <p className="text-sm uppercase tracking-widest text-neutral-400">Recommendly</p>
-        {success ? (
-          <div className="mt-2">
-            <h1 className="text-3xl font-semibold tracking-tight">Password updated</h1>
-            <p className="mt-4 text-sm text-emerald-700">Your password has been updated successfully.</p>
-            <a href="/auth/login" className="mt-6 inline-block rounded-md bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-neutral-700">
-              Go to sign in
-            </a>
-          </div>
-        ) : (
-          <div>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight">Set new password</h1>
-            <form onSubmit={function(e) { e.preventDefault(); setLoading(true); setError(null);
-              const supabase = createSupabaseBrowserClient();
-              supabase.auth.updateUser({ password }).then(function(_ref) {
-                var error = _ref.error;
-                if (error) { setError(error.message); setLoading(false); return; }
-                setSuccess(true); setLoading(false);
-              });
-            }} className="mt-8 space-y-5">
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium">New password</label>
-                <input
-                  id="password" type="password" required value={password} autoComplete="new-password"
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="mt-1.5 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 shadow-sm focus:border-neutral-500 focus:outline-none"
-                />
-              </div>
-              <div>
-                <label htmlFor="confirm-password" className="block text-sm font-medium">Confirm new password</label>
-                <input
-                  id="confirm" type="password" required value={confirm} autoComplete="new-password"
-                  onChange={(e) => setConfirm(e.target.value)}
-                  className="mt-1.5 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 shadow-sm focus:border-neutral-500 focus:outline-none"
-                />
-              </div>
-              {password !== confirm && password && confirm && (
-                <p className="text-sm text-red-600">Passwords do not match.</p>
-              )}
-              {error && <p className="text-sm text-red-600">{error}</p>}
-              <button
-                type="submit" disabled={loading || password !== confirm}
-                className="w-full rounded-md bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-700 disabled:opacity-50"
-              >
-                {loading ? "Updating…" : "Set new password"}
-              </button>
-            </form>
-          </div>
+    <AuthShell title="Set a new password.">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <Field htmlFor="password" label="New password">
+          <Input
+            id="password"
+            type="password"
+            required
+            value={password}
+            autoComplete="new-password"
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </Field>
+
+        <Field htmlFor="confirm" label="Confirm new password">
+          <Input
+            id="confirm"
+            type="password"
+            required
+            value={confirm}
+            autoComplete="new-password"
+            onChange={(e) => setConfirm(e.target.value)}
+          />
+        </Field>
+
+        {mismatch && <p className="text-sm text-danger">Passwords do not match.</p>}
+        {error && (
+          <p role="alert" className="text-sm text-danger">
+            {error}
+          </p>
         )}
-      </div>
-    </main>
+
+        <Button
+          type="submit"
+          variant="accent"
+          size="lg"
+          disabled={loading || mismatch || !password}
+          className="w-full"
+        >
+          {loading ? "Saving…" : "Update password"}
+        </Button>
+      </form>
+    </AuthShell>
   );
 }

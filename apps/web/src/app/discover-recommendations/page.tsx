@@ -3,47 +3,102 @@
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/nav/AppShell";
 import { Page, PageTitle } from "@/components/ui/Card";
-import { RecommendationCard } from "@/components/ui/RecommendationCard";
-import { EmptyState } from "@/components/ui/EmptyState";
+import {
+  RecommendationCard,
+  RecommendationList,
+} from "@/components/ui/RecommendationCard";
+import {
+  CardSkeletonList,
+  EmptyState,
+  ErrorState,
+} from "@/components/ui/EmptyState";
 import { ButtonLink } from "@/components/ui/Button";
+import { categoryLabels } from "@/lib/recommendation-display";
 import { fetchDiscoverRecommendations, type Recommendation } from "@/lib/api";
 
 export default function DiscoverRecommendationsPage() {
   const [recs, setRecs] = useState<Recommendation[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState("all");
 
-  useEffect(() => {
+  function load() {
+    setLoading(true);
+    setError(null);
     fetchDiscoverRecommendations()
       .then(setRecs)
-      .catch((e) => setError(e.message))
+      .catch((e) => setError((e as Error).message))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    load();
   }, []);
+
+  const present = Array.from(new Set((recs ?? []).map((r) => r.category_id)));
+  const visible = (recs ?? []).filter((r) => filter === "all" || r.category_id === filter);
 
   return (
     <AppShell>
       <Page>
-        <PageTitle eyebrow="Explore">Discover Recommendations</PageTitle>
+        <PageTitle
+          eyebrow="Recommended to you"
+          lede="From the people who've approved your request. Newest first."
+        >
+          Worth your time
+        </PageTitle>
 
-        <div className="mt-8 space-y-4">
-          {loading && <p className="text-sm text-neutral-500">Loading…</p>}
-          {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
-          )}
-          {!loading && !error && recs && recs.length === 0 && (
+        {present.length > 1 && (
+          <div className="mt-8 flex flex-wrap gap-2">
+            {["all", ...present].map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-pressed={filter === c}
+                onClick={() => setFilter(c)}
+                className={`min-h-9 rounded-full border px-3.5 text-[13px] transition-colors ${
+                  filter === c
+                    ? "border-ink bg-ink text-paper"
+                    : "border-line-strong text-ink-soft hover:bg-surface-sunk hover:text-ink"
+                }`}
+              >
+                {c === "all" ? "Everything" : (categoryLabels[c] ?? c)}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-10">
+          {loading && <CardSkeletonList />}
+
+          {error && !loading && <ErrorState message={error} onRetry={load} />}
+
+          {!loading && !error && recs?.length === 0 && (
             <EmptyState
-              icon="✦"
-              title="No recommendations from your connections yet."
-              description="Find people and connect with them to see their recommendations here."
+              title="Nothing here yet"
+              description="Once someone approves your request, everything they recommend shows up on this page."
             >
-              <ButtonLink href="/discover" variant="accent" className="mt-6">
-                Find People
+              <ButtonLink href="/discover" variant="accent">
+                Find people
               </ButtonLink>
             </EmptyState>
           )}
-          {recs?.map((r) => (
-            <RecommendationCard key={r.id} recommendation={r} ownerName={r.owner_name} />
-          ))}
+
+          {!loading && !error && visible.length > 0 && (
+            <RecommendationList>
+              {visible.map((r) => (
+                <RecommendationCard
+                  key={r.id}
+                  recommendation={r}
+                  owner={{ id: r.owner_id, name: r.owner_name, email: r.owner_email }}
+                />
+              ))}
+            </RecommendationList>
+          )}
+
+          {!loading && !error && recs && recs.length > 0 && visible.length === 0 && (
+            <EmptyState title="Nothing in this category yet" />
+          )}
         </div>
       </Page>
     </AppShell>

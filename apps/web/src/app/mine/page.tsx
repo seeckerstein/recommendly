@@ -1,11 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AppShell } from "@/components/nav/AppShell";
 import { Page, PageTitle } from "@/components/ui/Card";
 import { Button, ButtonLink } from "@/components/ui/Button";
-import { RecommendationCard } from "@/components/ui/RecommendationCard";
+import {
+  RecommendationCard,
+  RecommendationList,
+} from "@/components/ui/RecommendationCard";
 import { Modal } from "@/components/ui/Modal";
+import {
+  CardSkeletonList,
+  EmptyState,
+  ErrorState,
+} from "@/components/ui/EmptyState";
+import { categoryLabels } from "@/lib/recommendation-display";
 import {
   fetchMyRecommendations,
   deleteRecommendation,
@@ -13,14 +23,17 @@ import {
 } from "@/lib/api";
 
 export default function MyRecommendationsPage() {
+  const router = useRouter();
   const [recs, setRecs] = useState<Recommendation[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<string>("all");
   const [toDelete, setToDelete] = useState<Recommendation | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   async function load() {
     setLoading(true);
+    setError(null);
     try {
       setRecs(await fetchMyRecommendations());
     } catch (e) {
@@ -30,7 +43,9 @@ export default function MyRecommendationsPage() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   async function confirmDelete() {
     if (!toDelete) return;
@@ -46,46 +61,92 @@ export default function MyRecommendationsPage() {
     }
   }
 
+  const present = Array.from(new Set((recs ?? []).map((r) => r.category_id)));
+  const visible = (recs ?? []).filter((r) => filter === "all" || r.category_id === filter);
+
   return (
     <AppShell>
       <Page>
-        <div className="flex items-center justify-between">
-          <PageTitle eyebrow="Library">My recommendations</PageTitle>
-          <ButtonLink href="/new" variant="accent" className="shrink-0 px-6 py-3 text-base">+ Add new</ButtonLink>
-        </div>
+        <PageTitle
+          eyebrow="My shelf"
+          lede="Everything you've vouched for. Only people you've approved can see it."
+          action={
+            <ButtonLink href="/new" variant="accent">
+              Share something
+            </ButtonLink>
+          }
+        >
+          My shelf
+        </PageTitle>
 
-        <div className="mt-8 space-y-4">
-          {loading && <p className="text-sm text-neutral-500">Loading…</p>}
-          {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+        {present.length > 1 && (
+          <div className="mt-8 flex flex-wrap gap-2">
+            {["all", ...present].map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-pressed={filter === c}
+                onClick={() => setFilter(c)}
+                className={`min-h-9 rounded-full border px-3.5 text-[13px] transition-colors ${
+                  filter === c
+                    ? "border-ink bg-ink text-paper"
+                    : "border-line-strong text-ink-soft hover:bg-surface-sunk hover:text-ink"
+                }`}
+              >
+                {c === "all" ? "Everything" : (categoryLabels[c] ?? c)}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-10">
+          {loading && <CardSkeletonList />}
+
+          {error && !loading && (
+            <ErrorState message={error} onRetry={load} />
           )}
-          {!loading && !error && recs && recs.length === 0 && (
-            <div className="flex flex-col items-center rounded-2xl border border-dashed border-neutral-300 bg-white px-8 py-16 text-center">
-              <p className="text-lg font-medium text-neutral-900">Nothing here yet</p>
-              <p className="mt-1.5 max-w-sm text-sm text-neutral-600">
-                Share your first recommendation — it takes about a minute.
-              </p>
-              <ButtonLink href="/new" variant="accent" className="mt-6">Create one</ButtonLink>
-            </div>
+
+          {!loading && !error && recs?.length === 0 && (
+            <EmptyState
+              title="Your shelf is empty"
+              description="Start with the last thing you told a friend they had to read, watch or try."
+            >
+              <ButtonLink href="/new" variant="accent">
+                Share your first one
+              </ButtonLink>
+            </EmptyState>
           )}
-          {recs?.map((r) => (
-            <RecommendationCard
-              key={r.id}
-              recommendation={r}
-              onEdit={(rec) => window.location.assign(`/new?edit=${rec.id}`)}
-              onDelete={setToDelete}
-            />
-          ))}
+
+          {!loading && !error && visible.length > 0 && (
+            <RecommendationList>
+              {visible.map((r) => (
+                <RecommendationCard
+                  key={r.id}
+                  recommendation={r}
+                  onEdit={(rec) => router.push(`/new?edit=${rec.id}`)}
+                  onDelete={setToDelete}
+                />
+              ))}
+            </RecommendationList>
+          )}
+
+          {!loading && !error && recs && recs.length > 0 && visible.length === 0 && (
+            <EmptyState title="Nothing in this category yet" />
+          )}
         </div>
       </Page>
 
-      <Modal open={!!toDelete} onClose={() => setToDelete(null)} title="Delete this recommendation?">
-        <p className="text-sm text-neutral-600">
-          This will remove “{toDelete?.title ?? "this recommendation"}” from your library. This cannot be undone.
-        </p>
-        <div className="mt-6 flex justify-end gap-3">
-          <Button variant="secondary" onClick={() => setToDelete(null)}>Cancel</Button>
-          <Button onClick={confirmDelete} disabled={deleting} className="!bg-red-600 hover:!bg-red-500 !text-white">
+      <Modal
+        open={!!toDelete}
+        onClose={() => setToDelete(null)}
+        title="Delete this recommendation?"
+        description={`“${toDelete?.title ?? "This recommendation"}” will be removed from your shelf. This can't be undone.`}
+      >
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setToDelete(null)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={confirmDelete} disabled={deleting}>
             {deleting ? "Deleting…" : "Delete"}
           </Button>
         </div>

@@ -1,18 +1,24 @@
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
 export function Card({ className = "", ...props }: ComponentProps<"div">) {
   return (
     <div
-      className={`rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm ${className}`}
+      className={`rounded-[var(--radius-card)] border border-line bg-surface shadow-quiet ${className}`}
       {...props}
     />
   );
 }
 
-export function Page({ className = "", ...props }: ComponentProps<"div">) {
+/** Page wrapper — a comfortable reading measure, not a dashboard canvas. */
+export function Page({
+  className = "",
+  width = "reading",
+  ...props
+}: ComponentProps<"div"> & { width?: "reading" | "wide" }) {
+  const measure = width === "wide" ? "max-w-5xl" : "max-w-2xl";
   return (
     <div
-      className={`mx-auto w-full max-w-3xl px-4 pt-6 pb-24 md:px-8 md:pb-12 ${className}`}
+      className={`mx-auto w-full ${measure} px-5 pb-24 pt-8 sm:px-6 md:pb-20 md:pt-14 ${className}`}
       {...props}
     />
   );
@@ -21,18 +27,47 @@ export function Page({ className = "", ...props }: ComponentProps<"div">) {
 export function PageTitle({
   eyebrow,
   children,
+  lede,
+  action,
 }: {
   eyebrow?: string;
-  children: React.ReactNode;
+  children: ReactNode;
+  lede?: ReactNode;
+  action?: ReactNode;
 }) {
   return (
-    <header>
-      {eyebrow && (
-        <p className="text-xs font-medium uppercase tracking-widest text-neutral-400">{eyebrow}</p>
-      )}
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-neutral-900 md:text-3xl">
-        {children}
-      </h1>
+    <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+      <div className="min-w-0">
+        {eyebrow && (
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-faint">
+            {eyebrow}
+          </p>
+        )}
+        <h1 className="display mt-2 text-[2rem] font-normal leading-[1.1] text-ink sm:text-[2.5rem]">
+          {children}
+        </h1>
+        {lede && (
+          <p className="mt-3 max-w-prose text-[15px] leading-relaxed text-ink-soft">{lede}</p>
+        )}
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
     </header>
+  );
+}
+
+export function SectionHeading({
+  children,
+  hint,
+}: {
+  children: ReactNode;
+  hint?: ReactNode;
+}) {
+  return (
+    <div className="flex items-baseline justify-between gap-4">
+      <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-faint">
+        {children}
+      </h2>
+      {hint && <span className="text-xs text-ink-faint">{hint}</span>}
+    </div>
   );
 }

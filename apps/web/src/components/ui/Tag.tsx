@@ -1,10 +1,6 @@
-import type { ComponentProps } from "react";
+import type { ReactNode } from "react";
 
-export function Tag({ className = "", ...props }: ComponentProps<"span">) {
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-2.5 py-0.5 text-xs font-medium text-neutral-600 ${className}`}
-      {...props}
-    />
-  );
+/** Quiet inline tag. Deliberately unfilled — this product avoids badge soup. */
+export function Tag({ children }: { children: ReactNode }) {
+  return <span className="text-xs text-ink-faint">{children}</span>;
 }

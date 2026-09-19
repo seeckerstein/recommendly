@@ -44,6 +44,7 @@ export async function updateMe(patch: Partial<Profile>): Promise<Profile> {
 export interface Recommendation {
   owner_id?: string;
   owner_name?: string;
+  owner_email?: string;
   id: string;
   category_id: string;
   title: string | null;

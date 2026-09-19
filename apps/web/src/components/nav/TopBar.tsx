@@ -3,28 +3,30 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUnreadNotifications } from "@/lib/useNotifications";
+import { notificationsIcon } from "./nav-items";
 
 export function TopBar() {
   const pathname = usePathname();
   const unreadCount = useUnreadNotifications();
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-neutral-200 bg-white px-4 md:hidden">
-      <Link
-        href="/"
-        className="text-base font-semibold tracking-tight text-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[--color-accent]"
-      >
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-paper/85 px-4 backdrop-blur-md md:hidden">
+      <Link href="/" className="display text-[1.125rem] leading-none text-ink">
         Recommendly
       </Link>
       <Link
         href="/notifications"
-        aria-label="Activity and notifications"
+        aria-label={
+          unreadCount > 0 ? `Activity, ${unreadCount} unread` : "Activity and notifications"
+        }
         aria-current={pathname === "/notifications" ? "page" : undefined}
-        className="inline-flex size-10 items-center justify-center rounded-full text-neutral-600 hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[--color-accent]"
+        className="-mr-1.5 inline-flex size-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface-sunk hover:text-ink"
       >
         <span className="relative">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="size-5"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></svg>
-          {unreadCount > 0 && <span className="absolute -right-1 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-semibold text-white">{unreadCount}</span>}
+          {notificationsIcon({ className: "size-5" })}
+          {unreadCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-accent ring-2 ring-paper" />
+          )}
         </span>
       </Link>
     </header>

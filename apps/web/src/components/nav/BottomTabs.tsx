@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { navItems } from "./nav-items";
+import { navItems, isNavItemActive } from "./nav-items";
 
 const mobileItems = navItems.filter((item) => item.mobile);
 
@@ -12,33 +12,30 @@ export function BottomTabs() {
   return (
     <nav
       aria-label="Primary mobile"
-      className="fixed inset-x-0 bottom-0 z-40 grid grid-flow-col auto-cols-fr border-t border-neutral-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 grid grid-flow-col auto-cols-fr border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden"
     >
       {mobileItems.map((item) => {
-        const active = item.href === "/" ? pathname === "/" : pathname === item.href || (item.href === "/discover" && pathname.startsWith("/discover/"));
-        const accent = item.accent;
+        const active = isNavItemActive(item, pathname);
         return (
           <Link
             key={item.href}
             href={item.href}
             aria-current={active ? "page" : undefined}
-            aria-label={item.accent ? `Add a new recommendation` : item.label}
-            className={`flex min-h-[56px] flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[--color-accent] ${
-              accent
-                ? "text-[--color-accent]"
-                : active
-                  ? "text-neutral-900"
-                  : "text-neutral-500"
+            aria-label={item.accent ? "Share a recommendation" : item.label}
+            className={`flex min-h-[60px] flex-col items-center justify-center gap-1 px-1 text-[10.5px] font-medium transition-colors ${
+              item.accent ? "text-accent" : active ? "text-ink" : "text-ink-faint"
             }`}
           >
             <span
-              className={`inline-flex size-7 items-center justify-center rounded-full ${
-                accent ? "bg-[--color-accent] text-white shadow-sm" : ""
+              className={`inline-flex items-center justify-center ${
+                item.accent
+                  ? "size-9 rounded-full bg-accent text-white shadow-quiet"
+                  : "size-6"
               }`}
             >
-              {item.icon({ className: "size-5" })}
+              {item.icon({ className: item.accent ? "size-5" : "size-[22px]" })}
             </span>
-            {!accent && (item.shortLabel ?? item.label)}
+            {!item.accent && (item.shortLabel ?? item.label)}
           </Link>
         );
       })}

@@ -3,56 +3,26 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AppShell } from "@/components/nav/AppShell";
-import { Page, PageTitle, Card } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
+import { Page, PageTitle, SectionHeading } from "@/components/ui/Card";
+import { Input, Field } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button, ButtonLink } from "@/components/ui/Button";
+import { RatingInput } from "@/components/ui/Rating";
+import { ErrorState } from "@/components/ui/EmptyState";
 import {
   createRecommendation,
   updateRecommendation,
   fetchMyRecommendations,
   getCategoryMap,
 } from "@/lib/api";
+import {
+  categoryLabels,
+  commentPrompts,
+  metadataFields,
+  titleLabels,
+  titlePlaceholders,
+} from "@/lib/recommendation-display";
 import { categorySlugs, type CategorySlug } from "recommendation-domain";
-
-type MetadataKey = Record<CategorySlug, { key: string; label: string; placeholder?: string }[]>;
-
-const metadataFields: MetadataKey = {
-  book: [
-    { key: "author", label: "Author", placeholder: "e.g. Richard Powers" },
-    { key: "genre", label: "Genre", placeholder: "e.g. Literary fiction" },
-  ],
-  movie: [
-    { key: "director", label: "Director / Creator", placeholder: "e.g. Denis Villeneuve" },
-    { key: "genre", label: "Genre", placeholder: "e.g. Science fiction" },
-    { key: "year", label: "Year", placeholder: "e.g. 2021" },
-    { key: "platform", label: "Streaming platform", placeholder: "e.g. Netflix" },
-  ],
-  restaurant: [
-    { key: "location", label: "Location", placeholder: "City or neighbourhood" },
-    { key: "cuisine", label: "Cuisine", placeholder: "e.g. Thai" },
-  ],
-  series: [
-    { key: "creator", label: "Creator", placeholder: "e.g. Alexi Hawley" },
-    { key: "seasons", label: "Seasons", placeholder: "e.g. 4" },
-    { key: "platform", label: "Platform", placeholder: "e.g. ABC, Netflix" },
-    { key: "genre", label: "Genre", placeholder: "e.g. Crime drama" },
-    { key: "year", label: "Year", placeholder: "e.g. 2024" },
-    { key: "status", label: "Status", placeholder: "e.g. ongoing, ended" },
-  ],
-  other: [
-    { key: "type", label: "Type", placeholder: "e.g. podcast, course, place" },
-    { key: "details", label: "Details", placeholder: "Any extra details" },
-  ],
-};
-
-const titleLabels: Record<CategorySlug, string> = {
-  book: "Book title",
-  movie: "Movie title",
-  restaurant: "Restaurant name",
-  series: "Series title",
-  other: "Title",
-};
 
 function NewRecommendationForm() {
   const router = useRouter();
@@ -75,11 +45,18 @@ function NewRecommendationForm() {
       .then((recs) => {
         const rec = recs.find((r) => r.id === editId);
         if (!rec) throw new Error("Recommendation not found.");
+        if ((categorySlugs as readonly string[]).includes(rec.category_id)) {
+          setCategory(rec.category_id as CategorySlug);
+        }
         setComment(rec.comment);
         setTitle(rec.title ?? "");
         if (rec.rating) setRating(rec.rating);
         setTagsInput((rec.tags ?? []).join(", "));
-        setMetadata(Object.fromEntries(Object.entries(rec.metadata ?? {}).map(([k, v]) => [k, String(v)])));
+        setMetadata(
+          Object.fromEntries(
+            Object.entries(rec.metadata ?? {}).map(([k, v]) => [k, String(v)]),
+          ),
+        );
       })
       .catch((e) => setError((e as Error).message))
       .finally(() => setLoadingEdit(false));
@@ -95,7 +72,9 @@ function NewRecommendationForm() {
     setError(null);
     setSaving(true);
     try {
-      const cleanMetadata = Object.fromEntries(Object.entries(metadata).filter(([, v]) => v.trim()));
+      const cleanMetadata = Object.fromEntries(
+        Object.entries(metadata).filter(([, v]) => v.trim()),
+      );
       const catMap = await getCategoryMap();
       const category_id = catMap.get(category);
       if (!category_id) throw new Error("Invalid category selected.");
@@ -105,7 +84,10 @@ function NewRecommendationForm() {
         comment: comment.trim() || undefined,
         title: title.trim() || undefined,
         rating: (rating ?? undefined) as 1 | 2 | 3 | 4 | 5 | undefined,
-        tags: tagsInput.split(",").map((t) => t.trim()).filter(Boolean),
+        tags: tagsInput
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean),
         metadata: cleanMetadata,
       };
 
@@ -120,101 +102,138 @@ function NewRecommendationForm() {
     }
   }
 
+  const extras = metadataFields[category] ?? [];
+
   return (
     <AppShell>
       <Page>
-        <PageTitle eyebrow={editId ? "Edit" : "Create"}>{editId ? "Edit recommendation" : "New recommendation"}</PageTitle>
-        <p className="mt-2 text-neutral-600">Share something you love.</p>
+        <PageTitle
+          eyebrow={editId ? "Edit" : "Share"}
+          lede={
+            editId
+              ? "Change anything you like — the people connected to you will see the updated version."
+              : "One thing you'd genuinely put in someone's hands. The reason matters more than the rating."
+          }
+        >
+          {editId ? "Edit your recommendation" : "What's worth someone's time?"}
+        </PageTitle>
 
-        <div className="mt-8 max-w-xl">
-          <Card>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <fieldset>
-                <legend className="text-sm font-medium">Category *</legend>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {categorySlugs.map((c) => (
-                    <button
-                      type="button"
-                      key={c}
-                      onClick={() => switchCategory(c)}
-                      aria-pressed={category === c}
-                      disabled={false}
-                      className={`rounded-full border px-4 py-1.5 text-sm font-medium capitalize transition ${
-                        category === c
-                          ? "border-orange-700 bg-orange-700 text-white"
-                          : "border-neutral-300 bg-white hover:bg-neutral-100"
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
-
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium">{titleLabels[category]} *</label>
-                <Input id="title" value={title} required onChange={(e) => setTitle(e.target.value)} />
+        {loadingEdit ? (
+          <p className="mt-10 text-sm text-ink-faint">Loading recommendation…</p>
+        ) : (
+          <form onSubmit={handleSubmit} className="mt-10 space-y-10">
+            <fieldset className="space-y-3">
+              <legend className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-faint">
+                What is it?
+              </legend>
+              <div className="flex flex-wrap gap-2">
+                {categorySlugs.map((c) => (
+                  <button
+                    type="button"
+                    key={c}
+                    onClick={() => switchCategory(c)}
+                    aria-pressed={category === c}
+                    className={`min-h-10 rounded-full border px-4 text-sm transition-colors ${
+                      category === c
+                        ? "border-accent bg-accent text-white"
+                        : "border-line-strong bg-surface text-ink-soft hover:bg-surface-sunk hover:text-ink"
+                    }`}
+                  >
+                    {categoryLabels[c] ?? c}
+                  </button>
+                ))}
               </div>
+            </fieldset>
 
-              {(metadataFields[category] ?? []).map(({ key, label, placeholder }) => (
-                <div key={key}>
-                  <label htmlFor={`meta-${key}`} className="block text-sm font-medium">{label} (optional)</label>
-                  <Input
-                    id={`meta-${key}`}
-                    value={metadata[key] ?? ""}
-                    placeholder={placeholder}
-                    onChange={(e) => setMetadata({ ...metadata, [key]: e.target.value })}
-                  />
-                </div>
-              ))}
+            <div className="space-y-5">
+              <Field htmlFor="title" label={titleLabels[category]}>
+                <Input
+                  id="title"
+                  value={title}
+                  required
+                  placeholder={titlePlaceholders[category]}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </Field>
 
-              <div>
-                <label htmlFor="comment" className="block text-sm font-medium">Why do you love it? (optional)</label>
+              <Field
+                htmlFor="comment"
+                label="Your reason"
+                optional
+                hint="This is the part people actually read."
+              >
                 <Textarea
                   id="comment"
+                  rows={5}
                   value={comment}
-                  placeholder="A few sentences — what makes it worth someone's time?"
+                  placeholder={commentPrompts[category]}
                   onChange={(e) => setComment(e.target.value)}
                 />
-              </div>
+              </Field>
 
-              <div>
-                <label htmlFor="rating" className="block text-sm font-medium">Rating (optional)</label>
-                <select
-                  id="rating"
-                  value={rating ?? ""}
-                  onChange={(e) => setRating(e.target.value ? Number(e.target.value) : null)}
-                  className="mt-1.5 block w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-orange-700 focus:outline-none"
-                >
-                  <option value="">No rating</option>
-                  {[1,2,3,4,5].map((n) => <option key={n} value={n}>{n}</option>)}
-                </select>
-              </div>
+              <Field htmlFor="rating" label="Rating" optional>
+                <div id="rating">
+                  <RatingInput name="rating" value={rating} onChange={setRating} />
+                </div>
+              </Field>
+            </div>
 
-              <div>
-                <label htmlFor="tags" className="block text-sm font-medium">Tags (comma separated, optional)</label>
-                <Input id="tags" value={tagsInput} placeholder="slow-burn, translated" onChange={(e) => setTagsInput(e.target.value)} />
+            {extras.length > 0 && (
+              <div className="space-y-5">
+                <SectionHeading hint="all optional">Details</SectionHeading>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  {extras.map(({ key, label, placeholder }) => (
+                    <Field key={key} htmlFor={`meta-${key}`} label={label} optional>
+                      <Input
+                        id={`meta-${key}`}
+                        value={metadata[key] ?? ""}
+                        placeholder={placeholder}
+                        onChange={(e) => setMetadata({ ...metadata, [key]: e.target.value })}
+                      />
+                    </Field>
+                  ))}
+                  <Field
+                    htmlFor="tags"
+                    label="Tags"
+                    optional
+                    hint="Separate with commas."
+                  >
+                    <Input
+                      id="tags"
+                      value={tagsInput}
+                      placeholder="slow-burn, translated"
+                      onChange={(e) => setTagsInput(e.target.value)}
+                    />
+                  </Field>
+                </div>
               </div>
+            )}
 
-              {error && <p className="text-sm text-red-600">{error}</p>}
-              {loadingEdit && <p className="text-sm text-neutral-500">Loading recommendation…</p>}
+            {error && <ErrorState title="Couldn't save that" message={error} />}
 
-              <div className="flex items-center gap-3 pt-2">
-                <Button type="submit" variant="accent" disabled={saving || !title.trim() || loadingEdit}>
-                  {saving ? "Saving…" : editId ? "Save changes" : "Share recommendation"}
-                </Button>
-                <ButtonLink href="/mine" variant="ghost">Cancel</ButtonLink>
-              </div>
-            </form>
-          </Card>
-        </div>
+            <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] flex items-center gap-3 border-t border-line bg-paper/90 py-4 backdrop-blur-md md:static md:bg-transparent md:backdrop-blur-none">
+              <Button
+                type="submit"
+                variant="accent"
+                size="lg"
+                disabled={saving || !title.trim()}
+              >
+                {saving ? "Saving…" : editId ? "Save changes" : "Add to my shelf"}
+              </Button>
+              <ButtonLink href="/mine" variant="ghost" size="lg">
+                Cancel
+              </ButtonLink>
+            </div>
+          </form>
+        )}
       </Page>
     </AppShell>
   );
 }
+
 export default function NewRecommendationPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-sm text-neutral-500">Loading…</div>}>
+    <Suspense fallback={<div className="p-8 text-sm text-ink-faint">Loading…</div>}>
       <NewRecommendationForm />
     </Suspense>
   );

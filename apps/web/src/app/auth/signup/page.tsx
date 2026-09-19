@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { AuthShell } from "@/components/ui/AuthShell";
+import { Input, Field } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -15,13 +18,17 @@ export default function SignupPage() {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null); setNotice(null); setLoading(true);
+    setError(null);
+    setNotice(null);
+    setLoading(true);
 
     const supabase = createSupabaseBrowserClient();
     const { data, error } = await supabase.auth.signUp({ email, password });
 
     if (error) {
-      setError(error.message); setLoading(false); return;
+      setError(error.message);
+      setLoading(false);
+      return;
     }
 
     if (data.session) {
@@ -35,44 +42,60 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md items-center px-6">
-      <div className="w-full">
-        <p className="text-sm uppercase tracking-widest text-neutral-400">Recommendly</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Create your account</h1>
-        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium">Email</label>
-            <input
-              id="email" type="email" required value={email} autoComplete="email"
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1.5 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 shadow-sm focus:border-neutral-500 focus:outline-none"
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium">Password</label>
-            <input
-              id="password" type="password" required minLength={8} value={password} autoComplete="new-password"
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1.5 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 shadow-sm focus:border-neutral-500 focus:outline-none"
-            />
-            <p className="mt-1 text-xs text-neutral-500">At least 8 characters.</p>
-          </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          {notice && <p className="text-sm text-emerald-700">{notice}</p>}
-          <button
-            type="submit" disabled={loading}
-            className="w-full rounded-md bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-neutral-700 disabled:opacity-50"
-          >
-            {loading ? "Creating account…" : "Sign up"}
-          </button>
-        </form>
-        <p className="mt-6 text-sm text-neutral-600">
+    <AuthShell
+      title="Start your shelf."
+      lede="Keep the things worth recommending, and share them only with the people you choose."
+      footer={
+        <>
           Already have an account?{" "}
-          <Link href="/auth/login" className="font-medium underline underline-offset-4 hover:text-neutral-900">
+          <Link
+            href="/auth/login"
+            className="font-medium text-accent underline underline-offset-4"
+          >
             Sign in
           </Link>
-        </p>
-      </div>
-    </main>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <Field htmlFor="email" label="Email">
+          <Input
+            id="email"
+            type="email"
+            required
+            value={email}
+            autoComplete="email"
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </Field>
+
+        <Field htmlFor="password" label="Password" hint="At least 8 characters.">
+          <Input
+            id="password"
+            type="password"
+            required
+            minLength={8}
+            value={password}
+            autoComplete="new-password"
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </Field>
+
+        {error && (
+          <p role="alert" className="text-sm text-danger">
+            {error}
+          </p>
+        )}
+        {notice && (
+          <p role="status" className="text-sm text-positive">
+            {notice}
+          </p>
+        )}
+
+        <Button type="submit" variant="accent" size="lg" disabled={loading} className="w-full">
+          {loading ? "Creating account…" : "Create account"}
+        </Button>
+      </form>
+    </AuthShell>
   );
 }
