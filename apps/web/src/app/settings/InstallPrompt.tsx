@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 
@@ -48,7 +48,7 @@ export function InstallPrompt() {
 
   return (
     <p className="text-sm leading-relaxed text-ink-soft">
-      If no install button appears, open Chrome&apos;s menu (⋮) and choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.
+      Chrome will offer a one-tap install button when available. Otherwise, open Chrome's menu (&#8902;) and choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.
     </p>
   );
 }

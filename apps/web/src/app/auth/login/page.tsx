@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -77,12 +77,12 @@ function LoginForm() {
           )}
 
           <Button type="submit" variant="accent" size="lg" disabled={loading} className="w-full">
-            {loading ? "Signing inâ€¦" : "Sign in"}
+            {loading ? "Signing in…" : "Sign in"}
           </Button>
         </form>
 
       <div className="mt-6 space-y-2">
-        {["google", "apple"].map((provider) => (
+        {["google"].map((provider) => (
           <button
             key={provider}
             type="button"

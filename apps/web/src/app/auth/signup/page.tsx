@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -93,12 +93,12 @@ export default function SignupPage() {
         )}
 
         <Button type="submit" variant="accent" size="lg" disabled={loading} className="w-full">
-          {loading ? "Creating accountâ€¦" : "Create account"}
+          {loading ? "Creating account…" : "Create account"}
         </Button>
 </form>
 
       <div className="mt-6 space-y-2">
-        {["google", "apple"].map((provider) => (
+        {["google"].map((provider) => (
           <button
             key={provider}
             type="button"

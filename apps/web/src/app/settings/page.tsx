@@ -1,4 +1,4 @@
-﻿import { AppShell } from "@/components/nav/AppShell";
+import { AppShell } from "@/components/nav/AppShell";
 import { Page, PageTitle } from "@/components/ui/Card";
 import { InstallPrompt } from "./InstallPrompt";
 
@@ -64,18 +64,27 @@ export default function SettingsPage() {
           <section className="py-6">
             <h2 className="display text-[1.125rem] leading-snug text-ink">Get Recommendly on your phone</h2>
             <p className="mt-2 max-w-prose text-[15px] leading-relaxed text-ink-soft">
-              Install Recommendly on your iPhone or Android home screen for a faster, app-like experience.
+              Install Recommendly on your home screen for a faster, app-like experience.
             </p>
             <div className="mt-5 space-y-5">
               <div className="rounded-xl border border-line bg-surface px-4 py-4">
-                <p className="text-sm font-semibold text-ink">Android</p>
-                <div className="mt-2"><InstallPrompt /></div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-faint">Android &mdash; Chrome</p>
+                <div className="mt-3"><InstallPrompt /></div>
+                <ol className="mt-3 ml-5 list-decimal space-y-1 text-sm leading-relaxed text-ink-soft">
+                  <li>Open Recommendly in Chrome.</li>
+                  <li>Tap the &#8942; menu in the top-right.</li>
+                  <li>Choose &ldquo;Install app&rdquo; or &ldquo;Add to Home screen&rdquo;.</li>
+                  <li>Confirm the installation.</li>
+                </ol>
               </div>
               <div className="rounded-xl border border-line bg-surface px-4 py-4">
-                <p className="text-sm font-semibold text-ink">iPhone</p>
-                <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-                  Open Recommendly in Safari, tap Share, choose &ldquo;Add to Home Screen&rdquo;, then confirm Add.
-                </p>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-faint">iPhone &mdash; Safari</p>
+                <ol className="mt-3 ml-5 list-decimal space-y-1 text-sm leading-relaxed text-ink-soft">
+                  <li>Open Recommendly in Safari.</li>
+                  <li>Tap the Share button.</li>
+                  <li>Scroll down and tap &ldquo;Add to Home Screen&rdquo;.</li>
+                  <li>Tap &ldquo;Add&rdquo;.</li>
+                </ol>
               </div>
             </div>
           </section>
