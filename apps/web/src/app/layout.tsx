@@ -1,17 +1,24 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Recommendly — recommendations from people you trust",
+  title: "Recommendly â€” recommendations from people you trust",
   description:
-    "A quiet, private place to keep the books, films, series and places worth another person's time — and to see what the people you trust vouch for.",
+    "A quiet, private place to keep the books, films, series and places worth another person's time â€” and to see what the people you trust vouch for.",
   openGraph: {
-    title: "Recommendly — recommendations from people you trust",
+    title: "Recommendly â€” recommendations from people you trust",
     description:
       "Keep the books, films, series and places worth another person's time, and see what the people you trust vouch for.",
     type: "website",
   },
   twitter: { card: "summary_large_image" },
+  manifest: "/manifest.json",
+  themeColor: "#faf7f1",
+  appleWebApp: {
+    capable: true,
+    title: "Recommendly",
+    statusBarStyle: "default",
+  },
 };
 
 export default function RootLayout({

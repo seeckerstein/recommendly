@@ -1,0 +1,13 @@
+{
+  "name": "Recommendly",
+  "short_name": "Recommendly",
+  "description": "A quiet, private place to keep the books, films, series and places worth another person's time.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf7f1",
+  "theme_color": "#faf7f1",
+  "icons": [
+    { "src": "/icons/recommendly-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/recommendly-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

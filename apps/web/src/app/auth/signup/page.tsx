@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -93,9 +93,36 @@ export default function SignupPage() {
         )}
 
         <Button type="submit" variant="accent" size="lg" disabled={loading} className="w-full">
-          {loading ? "Creating account…" : "Create account"}
+          {loading ? "Creating accountâ€¦" : "Create account"}
         </Button>
-      </form>
-    </AuthShell>
+</form>
+
+      <div className="mt-6 space-y-2">
+        {["google", "apple"].map((provider) => (
+          <button
+            key={provider}
+            type="button"
+            onClick={async () => {
+              setError(null);
+              setLoading(true);
+              const supabase = createSupabaseBrowserClient();
+              const { error } = await supabase.auth.signInWithOAuth({
+                provider: provider as "google" | "apple",
+                options: {
+                  redirectTo: `${window.location.origin}/auth/callback?next=/`,
+                },
+              });
+              if (error) {
+                setError(error.message);
+                setLoading(false);
+              }
+            }}
+            disabled={loading}
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-line-strong bg-surface px-5 text-sm font-medium text-ink transition-colors hover:bg-surface-sunk disabled:opacity-50"
+          >
+            Continue with {provider === "google" ? "Google" : "Apple"}
+          </button>
+        ))}
+      </div>    </AuthShell>
   );
 }
