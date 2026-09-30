@@ -59,13 +59,14 @@ function LoginForm() {
             />
           </Field>
 
-          <Field htmlFor="password" label="Password">
-            <div className="flex items-baseline justify-between">
-              <label htmlFor="password" className="text-sm font-medium text-ink">Password</label>
+          <Field htmlFor="password" label={
+            <span className="flex items-baseline justify-between">
+              <span>Password</span>
               <Link href="/auth/forgot-password" className="text-sm font-medium text-accent underline underline-offset-4">
                 Forgot password?
               </Link>
-            </div>
+            </span>
+          }>
             <Input
               id="password"
               type="password"
