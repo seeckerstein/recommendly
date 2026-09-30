@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 describe("relationship state mapping", () => {
   const labels: Record<string, string> = {
@@ -71,5 +71,59 @@ describe("subscription status transitions", () => {
     for (const from of Object.keys(validTransitions)) {
       expect(validTransitions[from]).not.toContain("PENDING");
     }
+  });
+});
+
+describe("idempotent subscription transitions", () => {
+  // Mirrors the transition_subscription function logic from
+  // supabase/migrations/202609300002_idempotent_subscription_transitions.sql
+  function transition(currentStatus: string, nextStatus: string): string {
+    const allowedNext = ["APPROVED", "REJECTED", "REVOKED"];
+    if (!allowedNext.includes(nextStatus)) throw new Error("invalid subscription transition");
+    if (nextStatus === currentStatus && nextStatus === "APPROVED") return currentStatus;
+    if (nextStatus === currentStatus && nextStatus === "REJECTED") return currentStatus;
+    if (
+      (currentStatus === "PENDING" && !["APPROVED", "REJECTED"].includes(nextStatus)) ||
+      (currentStatus === "APPROVED" && nextStatus !== "REVOKED")
+    ) {
+      throw new Error("invalid subscription transition");
+    }
+    return nextStatus;
+  }
+
+  it("APPROVED -> APPROVED succeeds as a no-op", () => {
+    expect(transition("APPROVED", "APPROVED")).toBe("APPROVED");
+  });
+
+  it("REJECTED -> REJECTED succeeds as a no-op", () => {
+    expect(transition("REJECTED", "REJECTED")).toBe("REJECTED");
+  });
+
+  it("PENDING -> APPROVED still works", () => {
+    expect(transition("PENDING", "APPROVED")).toBe("APPROVED");
+  });
+
+  it("PENDING -> REJECTED still works", () => {
+    expect(transition("PENDING", "REJECTED")).toBe("REJECTED");
+  });
+
+  it("APPROVED -> REVOKED still works", () => {
+    expect(transition("APPROVED", "REVOKED")).toBe("REVOKED");
+  });
+
+  it("APPROVED -> REJECTED still fails", () => {
+    expect(() => transition("APPROVED", "REJECTED")).toThrow("invalid subscription transition");
+  });
+
+  it("PENDING -> REVOKED still fails", () => {
+    expect(() => transition("PENDING", "REVOKED")).toThrow("invalid subscription transition");
+  });
+
+  it("REJECTED -> APPROVED already succeeds in the original state machine", () => {
+    expect(transition("REJECTED", "APPROVED")).toBe("APPROVED");
+  });
+
+  it("REVOKED -> APPROVED already succeeds in the original state machine", () => {
+    expect(transition("REVOKED", "APPROVED")).toBe("APPROVED");
   });
 });
