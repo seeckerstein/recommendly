@@ -89,7 +89,7 @@ describe("get_connected_recommendations", () => {
     expect(apiCalls[0].path).toContain("/v1/recommendations?scope=connected");
     expect(apiCalls[0].init.headers).toMatchObject({ Authorization: "Bearer token" });
 
-    expect(result).toEqual([
+    expect(result.recommendations).toEqual([
       expect.objectContaining({ owner_id: "u-2", owner_name: "Sarah", owner_email: "sarah@example.com", category: "movie" }),
       expect.objectContaining({ owner_id: "u-3", owner_name: "Sarah", owner_email: "sarah2@example.com", category: "movie" }),
     ]);
@@ -119,8 +119,8 @@ describe("get_connected_recommendations", () => {
     ] } };
 
     const result = await toolHandlers.get_connected_recommendations("token", { category: "book" });
-    expect((result as unknown[]).length).toBe(1);
-    expect((result as { title: string }[])[0].title).toBe("Book");
+    expect(result.recommendations.length).toBe(1);
+    expect(result.recommendations[0].title).toBe("Book");
   });
 
   it("filters by search", async () => {
@@ -131,8 +131,8 @@ describe("get_connected_recommendations", () => {
     ] } };
 
     const result = await toolHandlers.get_connected_recommendations("token", { search: "tuscany" });
-    expect((result as unknown[]).length).toBe(1);
-    expect((result as { title: string }[])[0].title).toBe("Tuscany");
+    expect(result.recommendations.length).toBe(1);
+    expect(result.recommendations[0].title).toBe("Tuscany");
   });
 
   it("respects limit", async () => {
@@ -143,7 +143,7 @@ describe("get_connected_recommendations", () => {
     })) } };
 
     const result = await toolHandlers.get_connected_recommendations("token", { limit: 5 });
-    expect((result as unknown[]).length).toBe(5);
+    expect(result.recommendations.length).toBe(5);
   });
 });
 
@@ -158,7 +158,7 @@ describe("get_my_recommendations", () => {
     expect(apiCalls[0].path).toContain("/v1/recommendations?scope=mine");
     expect(apiCalls[0].init.headers).toMatchObject({ Authorization: "Bearer token" });
 
-    expect(result).toEqual([
+    expect(result.recommendations).toEqual([
       {
         id: "00000000-0000-4000-8000-000000000001",
         category: "book",
@@ -178,8 +178,8 @@ describe("get_my_recommendations", () => {
       { id: "r2", category_id: "cat-movie", comment: "b", created_at: "2024-01-02" },
     ] } };
     const result = await toolHandlers.get_my_recommendations("token", { category: "movie" });
-    expect(result).toHaveLength(1);
-    expect(String(result[0].category)).toBe("movie");
+    expect(result.recommendations).toHaveLength(1);
+    expect(String(result.recommendations[0].category)).toBe("movie");
   });
 
   it("filters by search text across title and comment", async () => {
@@ -188,8 +188,8 @@ describe("get_my_recommendations", () => {
       { id: "r2", category_id: "cat-book", title: "Dune", comment: "Spice", created_at: "2024-01-02" },
     ] } };
     const result = await toolHandlers.get_my_recommendations("token", { search: "hobbit" });
-    expect(result).toHaveLength(1);
-    expect(result[0].id).toBe("r1");
+    expect(result.recommendations).toHaveLength(1);
+    expect(result.recommendations[0].id).toBe("r1");
   });
 
   it("respects limit", async () => {
@@ -197,7 +197,7 @@ describe("get_my_recommendations", () => {
       id: `r${i}`, category_id: "cat-book", comment: "x", created_at: "2024-01-01",
     })) } };
     const result = await toolHandlers.get_my_recommendations("token", { limit: 2 });
-    expect(result).toHaveLength(2);
+    expect(result.recommendations).toHaveLength(2);
   });
 });
 
@@ -224,7 +224,7 @@ describe("create_recommendation - series/other (5.7)", () => {
     expect(payload.title).toBe("The Rookie");
     expect(payload.metadata).toEqual({ platform: "ABC" });
     expect(payload.metadata.title).toBeUndefined();
-    expect(result[0].id).toBe("r-series");
+    expect(result.recommendation.id).toBe("r-series");
   });
 
   it("creates an other recommendation with type metadata", async () => {
@@ -258,7 +258,7 @@ describe("create_recommendation", () => {
     expect(apiCalls[0].init.method).toBe("POST");
     const payload = JSON.parse(apiCalls[0].init.body);
     expect(payload).toMatchObject({ category: "book", comment: "test", rating: 4 });
-    expect(result[0].id).toBe("r-new");
+    expect(result.recommendation.id).toBe("r-new");
   });
 
   it("rejects unsupported categories", async () => {
@@ -274,7 +274,7 @@ describe("create_recommendation", () => {
     const result = await toolHandlers.create_recommendation("token", { category: "book", title: "The Hobbit" });
     const payload = JSON.parse(apiCalls[0].init.body);
     expect(payload.title).toBe("The Hobbit");
-    expect(result[0].id).toBe("r-title");
+    expect(result.recommendation.id).toBe("r-title");
   });
 
   it("rejects creating without title or comment", async () => {
@@ -316,7 +316,7 @@ describe("update_recommendation", () => {
     expect(patchCall!.init.method).toBe("PATCH");
     const payload = JSON.parse(patchCall!.init.body);
     expect(payload).toMatchObject({ comment: "updated", rating: 3, category_id: expect.any(String) });
-    expect(String(result[0].category)).toBe("cat-movie");
+    expect(String(result.recommendation.category)).toBe("cat-movie");
   });
 
   it("rejects invalid recommendation ids", async () => {

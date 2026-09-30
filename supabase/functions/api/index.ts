@@ -11,6 +11,15 @@ function json(data: unknown, status: number) {
   return new Response(JSON.stringify(data), { status, headers: corsHeaders });
 }
 
+type SupabaseClient = ReturnType<typeof createClient>;
+
+async function getAuthUser(client: SupabaseClient, authorization: string) {
+  const token = authorization.replace(/^Bearer\s+/i, "");
+  const { data, error } = await client.auth.getClaims(token);
+  if (error || !data) return { data: { user: null }, error: error ?? new Error("Invalid token") };
+  return { data: { user: { id: data.claims.sub } }, error: null };
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
@@ -30,7 +39,7 @@ Deno.serve(async (request) => {
     const { data, error } = await client
       .from("profiles")
       .select("id, display_name, bio, avatar_url, profile_visibility, created_at")
-      .eq("id", (await client.auth.getUser()).data.user?.id ?? "")
+      .eq("id", (await getAuthUser(client, authorization)).data.user?.id ?? "")
       .single();
     return json(error ? { error: error.message } : { data }, error ? 400 : 200);
   }
@@ -39,7 +48,7 @@ Deno.serve(async (request) => {
     let body;
     try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
 
-    const { data: { user } } = await client.auth.getUser();
+    const { data: { user } } = await getAuthUser(client, authorization);
     if (!user) return json({ error: "Invalid authentication token" }, 401);
 
     const allowed = ["username", "display_name", "bio", "avatar_url", "profile_visibility"];
@@ -70,7 +79,7 @@ Deno.serve(async (request) => {
     }
 
     if (url.searchParams.get("scope") === "mine") {
-      const { data: { user } } = await client.auth.getUser();
+      const { data: { user } } = await getAuthUser(client, authorization);
       if (!user) return json({ error: "Invalid authentication token" }, 401);
       const { data, error } = await client
         .from("recommendations")
@@ -83,7 +92,7 @@ Deno.serve(async (request) => {
 
     if (url.searchParams.get("scope") === "connected") {
       const ownerId = url.searchParams.get("owner_id");
-      const { data: { user } } = await client.auth.getUser();
+      const { data: { user } } = await getAuthUser(client, authorization);
       if (!user) return json({ error: "Invalid authentication token" }, 401);
       let recQuery = client
         .from("recommendations")
@@ -122,7 +131,7 @@ Deno.serve(async (request) => {
       return json({ error: "category and a title or comment are required" }, 400);
     }
 
-    const { data: { user }, error: userError } = await client.auth.getUser();
+    const { data: { user }, error: userError } = await getAuthUser(client, authorization);
     if (!user) {
       return json({ error: "Invalid authentication token" }, 401);
     }
@@ -156,7 +165,7 @@ Deno.serve(async (request) => {
   const singleRecMatch = url.pathname.match(/\/v1\/recommendations\/([0-9a-f-]+)$/);
   if (singleRecMatch && (request.method === "PATCH" || request.method === "DELETE")) {
     const recId = singleRecMatch[1];
-    const { data: { user } } = await client.auth.getUser();
+    const { data: { user } } = await getAuthUser(client, authorization);
     if (!user) return json({ error: "Invalid authentication token" }, 401);
 
     if (request.method === "PATCH") {
@@ -204,7 +213,7 @@ Deno.serve(async (request) => {
     if (sourceError || !source) {
       return json({ error: "Recommendation not found or access denied" }, 404);
     }
-    const { data: { user }, error: userError } = await client.auth.getUser();
+    const { data: { user }, error: userError } = await getAuthUser(client, authorization);
     if (!user) {
       return json({ error: "Invalid authentication token" }, 401);
     }
@@ -234,7 +243,7 @@ Deno.serve(async (request) => {
     // Escape PostgREST filter special characters to prevent filter injection.
     const q = raw.replace(/[,.()]/g, (ch) => "\\" + ch);
 
-    const { data: { user } } = await client.auth.getUser();
+    const { data: { user } } = await getAuthUser(client, authorization);
     if (!user) return json({ error: "Invalid authentication token" }, 401);
 
     const { data, error } = await client
@@ -252,7 +261,7 @@ Deno.serve(async (request) => {
   const userMatch = url.pathname.match(/\/v1\/users\/([0-9a-f-]+)$/);
   if (request.method === "GET" && userMatch) {
     const targetUserId = userMatch[1];
-    const { data: { user } } = await client.auth.getUser();
+    const { data: { user } } = await getAuthUser(client, authorization);
     if (!user) return json({ error: "Invalid authentication token" }, 401);
 
     const { data: profile, error: profileError } = await client
@@ -283,7 +292,7 @@ Deno.serve(async (request) => {
   // Subscriptions: GET /v1/subscriptions?type=
   // ---------------------------------------------------------------------------
   if (request.method === "GET" && url.pathname.endsWith("/v1/subscriptions")) {
-    const { data: { user } } = await client.auth.getUser();
+    const { data: { user } } = await getAuthUser(client, authorization);
     if (!user) return json({ error: "Invalid authentication token" }, 401);
 
     const type = url.searchParams.get("type") ?? "following";
@@ -314,7 +323,7 @@ Deno.serve(async (request) => {
     const publisherId = body?.publisher_id;
     if (!publisherId) return json({ error: "publisher_id is required" }, 400);
 
-    const { data: { user } } = await client.auth.getUser();
+    const { data: { user } } = await getAuthUser(client, authorization);
     if (!user) return json({ error: "Invalid authentication token" }, 401);
     if (user.id === publisherId) return json({ error: "Cannot subscribe to yourself" }, 400);
 
@@ -353,7 +362,7 @@ Deno.serve(async (request) => {
       return json({ error: "Invalid status. Must be APPROVED, REJECTED, or REVOKED." }, 400);
     }
 
-    const { data: { user } } = await client.auth.getUser();
+    const { data: { user } } = await getAuthUser(client, authorization);
     if (!user) return json({ error: "Invalid authentication token" }, 401);
 
     const { data, error } = await client.rpc("transition_subscription", { subscription_id: subId, next_status: nextStatus });
@@ -383,7 +392,7 @@ Deno.serve(async (request) => {
   const unsubMatch = url.pathname.match(/\/v1\/subscriptions\/([0-9a-f-]+)\/unsubscribe$/);
   if (request.method === "DELETE" && unsubMatch) {
     const publisherId = unsubMatch[1];
-    const { data: { user } } = await client.auth.getUser();
+    const { data: { user } } = await getAuthUser(client, authorization);
     if (!user) return json({ error: "Invalid authentication token" }, 401);
 
     const { data, error } = await client.rpc("unsubscribe", { target_publisher_id: publisherId });
@@ -395,7 +404,7 @@ Deno.serve(async (request) => {
   // Notifications: GET /v1/notifications
   // ---------------------------------------------------------------------------
   if (request.method === "GET" && url.pathname.endsWith("/v1/notifications")) {
-    const { data: { user } } = await client.auth.getUser();
+    const { data: { user } } = await getAuthUser(client, authorization);
     if (!user) return json({ error: "Invalid authentication token" }, 401);
 
     const { data, error } = await client
@@ -413,7 +422,7 @@ Deno.serve(async (request) => {
   const notifMatch = url.pathname.match(/\/v1\/notifications\/([0-9a-f-]+)\/read$/);
   if (request.method === "PATCH" && notifMatch) {
     const notifId = notifMatch[1];
-    const { data: { user } } = await client.auth.getUser();
+    const { data: { user } } = await getAuthUser(client, authorization);
     if (!user) return json({ error: "Invalid authentication token" }, 401);
 
     const { data, error } = await client

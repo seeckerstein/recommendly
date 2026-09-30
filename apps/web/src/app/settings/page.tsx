@@ -38,18 +38,55 @@ export default function SettingsPage() {
           <section className="py-6">
             <h2 className="display text-[1.125rem] leading-snug text-ink">Connect Claude</h2>
             <p className="mt-2 max-w-prose text-[15px] leading-relaxed text-ink-soft">
-              Claude can connect to YOU'D LIKE through its remote MCP server. It follows YOU'D LIKE&apos;s existing authorization model — it can read your own recommendations and those from connected users where you already have access, but never arbitrary users&apos; private recommendations.
+              Claude can connect to YOU&#39;D LIKE through its remote MCP server. It follows YOU&#39;D LIKE&#39;s existing authorization model, so Claude can read your own recommendations and recommendations from people you are connected to, subject to the access you already have.
             </p>
-            <ol className="mt-4 ml-5 list-decimal space-y-1.5 text-[15px] leading-relaxed text-ink-soft">
-              <li>In Claude, open Customize → Connectors.</li>
-              <li>Click + / Add custom connector.</li>
-              <li>Name it YOU'D LIKE.</li>
+            <h3 className="mt-5 text-sm font-medium text-ink">Connect YOU&#39;D LIKE to Claude</h3>
+            <ol className="mt-3 ml-5 list-decimal space-y-1.5 text-[15px] leading-relaxed text-ink-soft">
+              <li>In Claude, open <strong className="font-medium text-ink">Customize → Connectors</strong>.</li>
+              <li>Click <strong className="font-medium text-ink">+</strong> next to Connectors and select <strong className="font-medium text-ink">Add custom connector</strong>.</li>
+              <li>Enter <strong className="font-medium text-ink">YOU&#39;D LIKE</strong> as the connector name.</li>
               <li>Enter the MCP server URL: <code className="rounded bg-surface-sunk px-1.5 py-0.5 text-[13px] text-ink">https://zpjsmuuxgcewmymmdddr.supabase.co/functions/v1/mcp</code></li>
-              <li>Click Add.</li>
-              <li>Authenticate with your YOU'D LIKE account when prompted.</li>
-              <li>Approve access.</li>
-              <li>Enable YOU'D LIKE from Claude&apos;s chat connector menu.</li>
+              <li>Click <strong className="font-medium text-ink">Add</strong>.</li>
+              <li>Click <strong className="font-medium text-ink">Connect</strong> if Claude prompts you to connect the new connector.</li>
+              <li>Sign in with your YOU&#39;D LIKE account when prompted.</li>
+              <li>Review the requested permissions and click <strong className="font-medium text-ink">Allow access</strong>.</li>
+              <li>Enable <strong className="font-medium text-ink">YOU&#39;D LIKE</strong> for your conversation from Claude&#39;s <strong className="font-medium text-ink">+ → Connectors</strong> menu.</li>
             </ol>
+            <p className="mt-4 max-w-prose text-[15px] leading-relaxed text-ink-soft">
+              Once connected, Claude can use YOU&#39;D LIKE&#39;s recommendations within your existing account permissions.
+            </p>
+            <div className="mt-5 rounded-xl border border-line bg-surface px-4 py-4">
+              <p className="text-sm font-medium text-ink">Example prompts</p>
+              <ul className="mt-2 space-y-1 text-[13px] leading-relaxed text-ink-soft">
+                <li>&ldquo;Show me my recommendations.&rdquo;</li>
+                <li>&ldquo;Show me recommendations from people I&apos;m connected to.&rdquo;</li>
+                <li>&ldquo;Add The Rookie as a series with 3 stars.&rdquo;</li>
+                <li>&ldquo;Update my recommendation for The Hobbit.&rdquo;</li>
+              </ul>
+            </div>
+          </section>
+
+          <section className="py-6">
+            <h2 className="display text-[1.125rem] leading-snug text-ink">Connect ChatGPT</h2>
+            <p className="mt-2 max-w-prose text-[15px] leading-relaxed text-ink-soft">
+              ChatGPT can connect to YOU&#39;D LIKE through its remote MCP server. It follows YOU&#39;D LIKE&#39;s existing authorization model, so ChatGPT can use your recommendations within the permissions of your YOU&#39;D LIKE account.
+            </p>
+            <h3 className="mt-5 text-sm font-medium text-ink">Connect YOU&#39;D LIKE to ChatGPT</h3>
+            <ol className="mt-3 ml-5 list-decimal space-y-1.5 text-[15px] leading-relaxed text-ink-soft">
+              <li>In ChatGPT, open <strong className="font-medium text-ink">Settings → Apps</strong> and enable <strong className="font-medium text-ink">Developer Mode</strong> if available.</li>
+              <li>Click <strong className="font-medium text-ink">Create</strong> and select <strong className="font-medium text-ink">Create app</strong>.</li>
+              <li>Enter <strong className="font-medium text-ink">YOU&#39;D LIKE</strong> as the app name.</li>
+              <li>Enter the MCP server URL: <code className="rounded bg-surface-sunk px-1.5 py-0.5 text-[13px] text-ink">https://zpjsmuuxgcewmymmdddr.supabase.co/functions/v1/mcp</code></li>
+              <li>Select <strong className="font-medium text-ink">OAuth</strong> as the authentication method when prompted.</li>
+              <li>Click <strong className="font-medium text-ink">Scan Tools</strong>.</li>
+              <li>Sign in with your YOU&#39;D LIKE account when prompted.</li>
+              <li>Review the requested permissions and approve access.</li>
+              <li>Complete the app setup.</li>
+              <li>Open a new ChatGPT conversation and select <strong className="font-medium text-ink">YOU&#39;D LIKE</strong> from the tools/apps menu.</li>
+            </ol>
+            <p className="mt-4 max-w-prose text-[15px] leading-relaxed text-ink-soft">
+              Once connected, ChatGPT can use YOU&#39;D LIKE&#39;s recommendations within your existing account permissions. For actions that create or modify recommendations, ChatGPT may ask you to confirm the action.
+            </p>
             <div className="mt-5 rounded-xl border border-line bg-surface px-4 py-4">
               <p className="text-sm font-medium text-ink">Example prompts</p>
               <ul className="mt-2 space-y-1 text-[13px] leading-relaxed text-ink-soft">

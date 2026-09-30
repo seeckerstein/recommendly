@@ -252,7 +252,7 @@ export async function toolGetMyRecommendations(
     );
   }
 
-  return recs.slice(0, typeof args.limit === "number" ? args.limit : 20).map(cleanRecommendation);
+  return { recommendations: recs.slice(0, typeof args.limit === "number" ? args.limit : 20).map(cleanRecommendation) };
 }
 
 export const CATEGORY_SLUGS = new Set(["book", "movie", "restaurant", "series", "other"]);
@@ -280,7 +280,7 @@ export async function toolCreateRecommendation(
     throw new Error(message);
   }
   const data = (body as { data?: Record<string, unknown> }).data;
-  return data ? [cleanRecommendation(data)] : [];
+  return { recommendation: data ? cleanRecommendation(data) : null };
 }
 
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -329,7 +329,7 @@ export async function toolUpdateRecommendation(
     throw new Error(message);
   }
   const data = (body as { data?: Record<string, unknown> }).data;
-  return data ? [cleanRecommendation(data)] : [];
+  return { recommendation: data ? cleanRecommendation(data) : null };
 }
 
 export async function toolGetConnectedRecommendations(
@@ -371,12 +371,12 @@ export async function toolGetConnectedRecommendations(
     );
   }
 
-  return recs.slice(0, typeof args.limit === "number" ? args.limit : 20).map((r) => ({
+  return { recommendations: recs.slice(0, typeof args.limit === "number" ? args.limit : 20).map((r) => ({
     ...cleanRecommendation(r),
     owner_id: r.owner_id ?? null,
     owner_name: r.owner_name ?? null,
     owner_email: r.owner_email ?? null,
-  }));
+  })) };
 }
 export const toolHandlers: Record<string, (accessToken: string, args: Record<string, unknown>) => Promise<unknown>> = {
   get_my_recommendations: toolGetMyRecommendations,
