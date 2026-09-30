@@ -59,14 +59,7 @@ function LoginForm() {
             />
           </Field>
 
-          <Field htmlFor="password" label={
-            <span className="flex items-baseline justify-between">
-              <span>Password</span>
-              <Link href="/auth/forgot-password" className="text-sm font-medium text-accent underline underline-offset-4">
-                Forgot password?
-              </Link>
-            </span>
-          }>
+          <Field htmlFor="password" label="Password">
             <Input
               id="password"
               type="password"
@@ -116,15 +109,23 @@ function LoginForm() {
         ))}
       </div>
 
-        <p className="mt-7 text-sm text-ink-soft">
-          No account?{" "}
+        <div className="mt-7 flex flex-wrap items-baseline justify-between gap-2 text-sm text-ink-soft">
+          <p>
+            No account?{" "}
+            <Link
+              href="/auth/signup"
+              className="font-medium text-accent underline underline-offset-4"
+            >
+              Sign up
+            </Link>
+          </p>
           <Link
-            href="/auth/signup"
+            href="/auth/forgot-password"
             className="font-medium text-accent underline underline-offset-4"
           >
-            Sign up
+            Forgot password?
           </Link>
-        </p>
+        </div>
       </div>
     </main>
   );
