@@ -71,7 +71,9 @@ async function sendContactRequestEmail(publisherId: string, requesterId: string)
     console.error("contact request email failed:", await response.text());
   }
 }
-\nasync function getAuthUser(client: SupabaseClient, authorization: string) {
+
+
+async function getAuthUser(client: SupabaseClient, authorization: string) {
   const token = authorization.replace(/^Bearer\s+/i, "");
   const { data, error } = await client.auth.getClaims(token);
   if (error || !data) return { data: { user: null }, error: error ?? new Error("Invalid token") };
