@@ -226,3 +226,24 @@ export async function markNotificationRead(notificationId: string): Promise<void
   });
   if (!res.ok) throw new Error(`Failed to mark read (${res.status})`);
 }
+
+export async function getEmailNotificationSettings(): Promise<boolean> {
+  const res = await fetch(apiUrl("/v1/settings/email-notifications"), {
+    headers: await getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error(`Failed to load email notification settings (${res.status})`);
+  const json = await res.json();
+  return json.data?.email_contact_requests ?? true;
+}
+
+export async function updateEmailNotificationSettings(enabled: boolean): Promise<void> {
+  const res = await fetch(apiUrl("/v1/settings/email-notifications"), {
+    method: "PATCH",
+    headers: await getAuthHeaders(),
+    body: JSON.stringify({ email_contact_requests: enabled }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error ?? `Failed to update email notification settings (${res.status})`);
+  }
+}
