@@ -13,7 +13,65 @@ function json(data: unknown, status: number) {
 
 type SupabaseClient = ReturnType<typeof createClient>;
 
-async function getAuthUser(client: SupabaseClient, authorization: string) {
+
+async function sendContactRequestEmail(publisherId: string, requesterId: string) {
+  const apiKey = Deno.env.get("RESEND_API_KEY");
+  if (!apiKey) {
+    console.warn("RESEND_API_KEY is not configured; skipping contact request email");
+    return;
+  }
+
+  const serviceClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  const [{ data: settings }, { data: publisher }, { data: requester }] = await Promise.all([
+    serviceClient
+      .from("user_settings")
+      .select("email_contact_requests")
+      .eq("user_id", publisherId)
+      .maybeSingle(),
+    serviceClient
+      .from("profiles")
+      .select("email, display_name")
+      .eq("id", publisherId)
+      .single(),
+    serviceClient
+      .from("profiles")
+      .select("display_name")
+      .eq("id", requesterId)
+      .single(),
+  ]);
+
+  if (settings?.email_contact_requests === false || !publisher?.email) return;
+
+  const from = Deno.env.get("RESEND_FROM_EMAIL") ?? "YOU'D LIKE <no-reply@youdlike.me>";
+  const requesterName = requester?.display_name ?? "Someone";
+  const appUrl = "https://www.youdlike.me/notifications";
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: [publisher.email],
+      subject: "Someone wants to connect with you on YOU'D LIKE",
+      html: `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#222;max-width:560px;margin:0 auto;padding:24px">
+        <h2 style="margin:0 0 16px">Someone wants to connect with you</h2>
+        <p><strong>${requesterName.replace(/[<>&"]/g, "")}</strong> has asked to connect with you on YOU'D LIKE.</p>
+        <p style="margin-top:24px"><a href="${appUrl}" style="display:inline-block;padding:10px 16px;border-radius:999px;background:#222;color:#fff;text-decoration:none">View request</a></p>
+      </div>`,
+    }),
+  });
+
+  if (!response.ok) {
+    console.error("contact request email failed:", await response.text());
+  }
+}
+\nasync function getAuthUser(client: SupabaseClient, authorization: string) {
   const token = authorization.replace(/^Bearer\s+/i, "");
   const { data, error } = await client.auth.getClaims(token);
   if (error || !data) return { data: { user: null }, error: error ?? new Error("Invalid token") };
@@ -66,6 +124,42 @@ Deno.serve(async (request) => {
       .single();
     return json(error ? { error: error.message } : { data }, error ? 400 : 200);
   }
+
+  if (request.method === "GET" && url.pathname.endsWith("/v1/settings/email-notifications")) {
+    const { data: { user } } = await getAuthUser(client, authorization);
+    if (!user) return json({ error: "Invalid authentication token" }, 401);
+
+    const { data, error } = await client
+      .from("user_settings")
+      .select("email_contact_requests")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    return json(error ? { error: error.message } : { data: data ?? { email_contact_requests: true } }, error ? 400 : 200);
+  }
+
+  if (request.method === "PATCH" && url.pathname.endsWith("/v1/settings/email-notifications")) {
+    let body;
+    try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
+    if (typeof body?.email_contact_requests !== "boolean") {
+      return json({ error: "email_contact_requests must be a boolean" }, 400);
+    }
+
+    const { data: { user } } = await getAuthUser(client, authorization);
+    if (!user) return json({ error: "Invalid authentication token" }, 401);
+
+    const { data, error } = await client
+      .from("user_settings")
+      .upsert({
+        user_id: user.id,
+        email_contact_requests: body.email_contact_requests,
+      })
+      .select("email_contact_requests")
+      .single();
+
+    return json(error ? { error: error.message } : { data }, error ? 400 : 200);
+  }
+
   if (request.method === "GET" && url.pathname.endsWith("/v1/recommendations")) {
     const query = url.searchParams.get("q");
     if (query) {
@@ -346,6 +440,8 @@ Deno.serve(async (request) => {
       console.error("notification insert failed:", notifError.message);
       return json({ data, notification_created: false }, 207);
     }
+
+    await sendContactRequestEmail(publisherId, user.id);
     return json({ data }, 201);
   }
 
