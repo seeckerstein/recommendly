@@ -1,11 +1,12 @@
 import { AppShell } from "@/components/nav/AppShell";
 import { Page, PageTitle } from "@/components/ui/Card";
 import { InstallPrompt } from "./InstallPrompt";
+import { DeleteAccountSection } from "./DeleteAccountSection";
 
 const sections = [
   {
     title: "Your account",
-    body: "You sign in with your email address. Password changes and account deletion aren't available in the app yet.",
+    body: "You sign in with your email address. Password changes and account deletion are available below.",
   },
   {
     title: "Who can see your shelf",
@@ -125,6 +126,8 @@ export default function SettingsPage() {
               </div>
             </div>
           </section>
+          <DeleteAccountSection />
+
           <section className="py-6">
             <h2 className="display text-[1.125rem] leading-snug text-ink">This device</h2>
             <p className="mt-2 max-w-prose text-[15px] leading-relaxed text-ink-soft">
