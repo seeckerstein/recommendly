@@ -48,7 +48,7 @@ function ConsentForm() {
         setUserName(session.user.email ?? "your account");
       }
 
-      // Call getAuthorizationDetails â€” this binds the pending auth to the user
+      // Call getAuthorizationDetails — this binds the pending auth to the user
       // and returns either authorization details or a redirect (if already consented)
       const { data, error: authError } = await supabase.auth.oauth.getAuthorizationDetails(authId);
       if (authError) {
@@ -59,13 +59,13 @@ function ConsentForm() {
 
       // Check if the response is a redirect (user already consented for this client+scopes)
       if (data && "redirect_url" in data && data.redirect_url) {
-        // Already consented â€” immediately redirect
+        // Already consented — immediately redirect
         setStatus("redirecting");
         window.location.href = (data as { redirect_url: string }).redirect_url;
         return;
       }
 
-      // Response is authorization details â€” show consent UI
+      // Response is authorization details — show consent UI
       if (data && "client" in data) {
         const details = data as { client?: { name?: string }, scope?: string };
         setClientName(details.client?.name ?? "your AI assistant");
@@ -135,7 +135,7 @@ function ConsentForm() {
     return (
       <main className="mx-auto flex min-h-dvh max-w-md items-center justify-center px-6">
         <p className="text-sm text-ink-faint">
-          {status === "loading" ? "Checking your session…" : "Redirecting…"}
+          {status === "loading" ? "Checking your sessionâ€¦" : "Redirectingâ€¦"}
         </p>
       </main>
     );
@@ -148,7 +148,7 @@ function ConsentForm() {
         lede="Your assistant can now work with your shelf. You can close this window."
       >
         <ButtonLink href="/" variant="secondary" size="lg">
-          Back to Recommendly
+          Back to YOU'D LIKE
         </ButtonLink>
       </AuthShell>
     );
@@ -161,7 +161,7 @@ function ConsentForm() {
         lede="Your assistant will not have access to your recommendations. You can close this window."
       >
         <ButtonLink href="/" variant="secondary" size="lg">
-          Back to Recommendly
+          Back to YOU'D LIKE
         </ButtonLink>
       </AuthShell>
     );
@@ -184,7 +184,7 @@ function ConsentForm() {
         clientName ? (
           <>
             <span className="font-medium text-ink">{clientName}</span> is requesting access to your
-            Recommendly account.
+            YOU'D LIKE account.
           </>
         ) : undefined
       }
@@ -244,7 +244,7 @@ function ConsentForm() {
             onClick={() => handleAction(true)}
             className="flex-1"
           >
-            {processing ? "Connecting…" : "Allow access"}
+            {processing ? "Connectingâ€¦" : "Allow access"}
           </Button>
           <Button
             variant="secondary"

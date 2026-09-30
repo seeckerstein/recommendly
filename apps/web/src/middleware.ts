@@ -8,7 +8,7 @@ type CookieToSet = { name: string; value: string; options?: Record<string, unkno
 
 function isProtected(pathname: string) {
   if (pathname.startsWith("/auth") || pathname.startsWith("/oauth")) return false;
-  if (pathname.startsWith("/_next") || pathname.startsWith("/favicon")) return false;
+  if (pathname.startsWith("/_next") || pathname.startsWith("/favicon") || pathname.startsWith("/icons") || pathname === "/manifest.json") return false;
   return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
 }
 

@@ -16,7 +16,7 @@ export function AuthShell({
     <main className="mx-auto flex min-h-dvh max-w-md items-center px-6 py-12">
       <div className="w-full">
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-faint">
-          Recommendly
+          YOU'D LIKE
         </p>
         <h1 className="display mt-3 text-[2.25rem] font-normal leading-[1.1] text-ink">
           {title}

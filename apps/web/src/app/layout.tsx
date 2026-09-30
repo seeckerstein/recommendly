@@ -1,22 +1,29 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Recommendly â€” recommendations from people you trust",
+  title: "YOU'D LIKE — recommendations from people you trust",
   description:
-    "A quiet, private place to keep the books, films, series and places worth another person's time â€” and to see what the people you trust vouch for.",
+    "A quiet place to keep the books, films, series and places worth another person's time — and see what the people you trust think you'd like.",
   openGraph: {
-    title: "Recommendly â€” recommendations from people you trust",
+    title: "YOU'D LIKE — recommendations from people you trust",
     description:
-      "Keep the books, films, series and places worth another person's time, and see what the people you trust vouch for.",
+      "Keep the books, films, series and places worth another person's time, and see what the people you trust think you'd like.",
     type: "website",
   },
   twitter: { card: "summary_large_image" },
   manifest: "/manifest.json",
   themeColor: "#faf7f1",
+  icons: {
+    icon: [
+      { url: "/icons/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
+  },
   appleWebApp: {
     capable: true,
-    title: "Recommendly",
+    title: "YOU'D LIKE",
     statusBarStyle: "default",
   },
 };

@@ -13,7 +13,7 @@ const sections = [
   },
   {
     title: "Assistants",
-    body: "Once connected, an authorized assistant can read your recommendations and the recommendations from people you've connected with â€” but only where you already have access to them. It can create and update recommendations on your behalf. It cannot see recommendations from arbitrary users, and it never bypasses the normal authorization model.",
+    body: "Once connected, an authorized assistant can read your recommendations and the recommendations from people you've connected with — but only where you already have access to them. It can create and update recommendations on your behalf. It cannot see recommendations from arbitrary users, and it never bypasses the normal authorization model.",
   },
 ];
 
@@ -21,7 +21,7 @@ export default function SettingsPage() {
   return (
     <AppShell>
       <Page>
-        <PageTitle eyebrow="Settings" lede="How Recommendly works for you, in plain terms.">
+        <PageTitle eyebrow="Settings" lede="How YOU'D LIKE works for you, in plain terms.">
           Settings
         </PageTitle>
 
@@ -38,17 +38,17 @@ export default function SettingsPage() {
           <section className="py-6">
             <h2 className="display text-[1.125rem] leading-snug text-ink">Connect Claude</h2>
             <p className="mt-2 max-w-prose text-[15px] leading-relaxed text-ink-soft">
-              Claude can connect to Recommendly through its remote MCP server. It follows Recommendly&apos;s existing authorization model — it can read your own recommendations and those from connected users where you already have access, but never arbitrary users&apos; private recommendations.
+              Claude can connect to YOU'D LIKE through its remote MCP server. It follows YOU'D LIKE&apos;s existing authorization model — it can read your own recommendations and those from connected users where you already have access, but never arbitrary users&apos; private recommendations.
             </p>
             <ol className="mt-4 ml-5 list-decimal space-y-1.5 text-[15px] leading-relaxed text-ink-soft">
-              <li>In Claude, open Customize → Connectors.</li>
+              <li>In Claude, open Customize â†’ Connectors.</li>
               <li>Click + / Add custom connector.</li>
-              <li>Name it Recommendly.</li>
+              <li>Name it YOU'D LIKE.</li>
               <li>Enter the MCP server URL: <code className="rounded bg-surface-sunk px-1.5 py-0.5 text-[13px] text-ink">https://zpjsmuuxgcewmymmdddr.supabase.co/functions/v1/mcp</code></li>
               <li>Click Add.</li>
-              <li>Authenticate with your Recommendly account when prompted.</li>
+              <li>Authenticate with your YOU'D LIKE account when prompted.</li>
               <li>Approve access.</li>
-              <li>Enable Recommendly from Claude&apos;s chat connector menu.</li>
+              <li>Enable YOU'D LIKE from Claude&apos;s chat connector menu.</li>
             </ol>
             <div className="mt-5 rounded-xl border border-line bg-surface px-4 py-4">
               <p className="text-sm font-medium text-ink">Example prompts</p>
@@ -62,16 +62,16 @@ export default function SettingsPage() {
           </section>
 
           <section className="py-6">
-            <h2 className="display text-[1.125rem] leading-snug text-ink">Get Recommendly on your phone</h2>
+            <h2 className="display text-[1.125rem] leading-snug text-ink">Get YOU'D LIKE on your phone</h2>
             <p className="mt-2 max-w-prose text-[15px] leading-relaxed text-ink-soft">
-              Install Recommendly on your home screen for a faster, app-like experience.
+              Install YOU'D LIKE on your home screen for a faster, app-like experience.
             </p>
             <div className="mt-5 space-y-5">
               <div className="rounded-xl border border-line bg-surface px-4 py-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-faint">Android &mdash; Chrome</p>
                 <div className="mt-3"><InstallPrompt /></div>
                 <ol className="mt-3 ml-5 list-decimal space-y-1 text-sm leading-relaxed text-ink-soft">
-                  <li>Open Recommendly in Chrome.</li>
+                  <li>Open YOU'D LIKE in Chrome.</li>
                   <li>Tap the &#8942; menu in the top-right.</li>
                   <li>Choose &ldquo;Install app&rdquo; or &ldquo;Add to Home screen&rdquo;.</li>
                   <li>Confirm the installation.</li>
@@ -80,7 +80,7 @@ export default function SettingsPage() {
               <div className="rounded-xl border border-line bg-surface px-4 py-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-faint">iPhone &mdash; Safari</p>
                 <ol className="mt-3 ml-5 list-decimal space-y-1 text-sm leading-relaxed text-ink-soft">
-                  <li>Open Recommendly in Safari.</li>
+                  <li>Open YOU'D LIKE in Safari.</li>
                   <li>Tap the Share button.</li>
                   <li>Scroll down and tap &ldquo;Add to Home Screen&rdquo;.</li>
                   <li>Tap &ldquo;Add&rdquo;.</li>
@@ -91,7 +91,7 @@ export default function SettingsPage() {
           <section className="py-6">
             <h2 className="display text-[1.125rem] leading-snug text-ink">This device</h2>
             <p className="mt-2 max-w-prose text-[15px] leading-relaxed text-ink-soft">
-              Sign out of Recommendly here.
+              Sign out of YOU'D LIKE here.
             </p>
             <form action="/auth/logout" method="post" className="mt-4">
               <button

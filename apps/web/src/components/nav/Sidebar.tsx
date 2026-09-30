@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { navItems, isNavItemActive, notificationsIcon } from "./nav-items";
+import { Logo } from "@/components/brand/Logo";
 import { useUnreadNotifications } from "@/lib/useNotifications";
 
 export function Sidebar() {
@@ -18,9 +19,7 @@ export function Sidebar() {
       aria-label="Primary"
       className="fixed inset-y-0 left-0 z-40 hidden w-[17rem] flex-col border-r border-line bg-surface px-5 py-7 md:flex"
     >
-      <Link href="/" className="display px-2 text-[1.375rem] leading-none text-ink">
-        Recommendly
-      </Link>
+      <Logo size="lg" className="px-2" />
 
       {add && (
         <Link

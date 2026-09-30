@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUnreadNotifications } from "@/lib/useNotifications";
+import { Logo } from "@/components/brand/Logo";
 import { notificationsIcon } from "./nav-items";
 
 export function TopBar() {
@@ -11,9 +12,7 @@ export function TopBar() {
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-line bg-paper/85 px-4 backdrop-blur-md md:hidden">
-      <Link href="/" className="display text-[1.125rem] leading-none text-ink">
-        Recommendly
-      </Link>
+      <Logo size="md" />
       <Link
         href="/notifications"
         aria-label={

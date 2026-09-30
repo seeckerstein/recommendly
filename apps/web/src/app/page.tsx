@@ -37,7 +37,7 @@ export default async function HomePage() {
     <AppShell>
       <Page>
         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-ink-faint">
-          Recommendly
+          YOU'D LIKE
         </p>
         <h1 className="display mt-4 text-[2.5rem] font-normal leading-[1.05] text-ink sm:text-[3.5rem]">
           Recommendations
@@ -76,7 +76,7 @@ export default async function HomePage() {
                 aria-hidden
                 className="shrink-0 text-accent transition-transform group-hover:translate-x-1"
               >
-                →
+                â†’
               </span>
             </Link>
           ))}
