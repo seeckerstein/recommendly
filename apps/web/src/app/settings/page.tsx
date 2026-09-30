@@ -2,6 +2,7 @@ import { AppShell } from "@/components/nav/AppShell";
 import { Page, PageTitle } from "@/components/ui/Card";
 import { InstallPrompt } from "./InstallPrompt";
 import { DeleteAccountSection } from "./DeleteAccountSection";
+import { EmailNotificationSettings } from "./EmailNotificationSettings";
 
 const sections = [
   {
@@ -126,6 +127,7 @@ export default function SettingsPage() {
               </div>
             </div>
           </section>
+          <EmailNotificationSettings />
           <DeleteAccountSection />
 
           <section className="py-6">
