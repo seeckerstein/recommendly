@@ -135,7 +135,7 @@ function ConsentForm() {
     return (
       <main className="mx-auto flex min-h-dvh max-w-md items-center justify-center px-6">
         <p className="text-sm text-ink-faint">
-          {status === "loading" ? "Checking your sessionâ€¦" : "Redirectingâ€¦"}
+          {status === "loading" ? "Checking your session…" : "Redirecting…"}
         </p>
       </main>
     );
@@ -244,7 +244,7 @@ function ConsentForm() {
             onClick={() => handleAction(true)}
             className="flex-1"
           >
-            {processing ? "Connectingâ€¦" : "Allow access"}
+            {processing ? "Connecting…" : "Allow access"}
           </Button>
           <Button
             variant="secondary"

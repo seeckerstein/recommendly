@@ -77,7 +77,7 @@ function LoginForm() {
           )}
 
           <Button type="submit" variant="accent" size="lg" disabled={loading} className="w-full">
-            {loading ? "Signing inâ€¦" : "Sign in"}
+            {loading ? "Signing in…" : "Sign in"}
           </Button>
         </form>
 

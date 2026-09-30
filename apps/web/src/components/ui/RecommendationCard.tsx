@@ -28,7 +28,7 @@ export type RecommendationCardProps = {
 };
 
 /**
- * A shelf entry. Reads person â†’ reason â†’ title â†’ quiet supporting detail.
+ * A shelf entry. Reads person → reason → title → quiet supporting detail.
  * Deliberately borderless: entries are separated by a hairline rule from the
  * list that contains them, so the page reads like a page, not a grid of boxes.
  */

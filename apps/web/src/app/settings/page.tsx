@@ -41,7 +41,7 @@ export default function SettingsPage() {
               Claude can connect to YOU'D LIKE through its remote MCP server. It follows YOU'D LIKE&apos;s existing authorization model — it can read your own recommendations and those from connected users where you already have access, but never arbitrary users&apos; private recommendations.
             </p>
             <ol className="mt-4 ml-5 list-decimal space-y-1.5 text-[15px] leading-relaxed text-ink-soft">
-              <li>In Claude, open Customize â†’ Connectors.</li>
+              <li>In Claude, open Customize → Connectors.</li>
               <li>Click + / Add custom connector.</li>
               <li>Name it YOU'D LIKE.</li>
               <li>Enter the MCP server URL: <code className="rounded bg-surface-sunk px-1.5 py-0.5 text-[13px] text-ink">https://zpjsmuuxgcewmymmdddr.supabase.co/functions/v1/mcp</code></li>

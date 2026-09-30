@@ -76,7 +76,7 @@ export default async function HomePage() {
                 aria-hidden
                 className="shrink-0 text-accent transition-transform group-hover:translate-x-1"
               >
-                â†’
+                →
               </span>
             </Link>
           ))}

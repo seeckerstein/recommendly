@@ -57,7 +57,7 @@ export default function DiscoverPage() {
             autoComplete="off"
           />
           <Button type="submit" disabled={loading || !query.trim()} className="shrink-0">
-            {loading ? "Searchingâ€¦" : "Search"}
+            {loading ? "Searching…" : "Search"}
           </Button>
         </form>
 
@@ -81,7 +81,7 @@ export default function DiscoverPage() {
           {!loading && !error && results?.length === 0 && (
             <EmptyState
               title="Nobody matched that"
-              description={`No one found for â€œ${searched}â€. Try their full email address.`}
+              description={`No one found for “${searched}”. Try their full email address.`}
             />
           )}
 
@@ -102,7 +102,7 @@ export default function DiscoverPage() {
                       aria-hidden
                       className="text-accent transition-transform group-hover:translate-x-1"
                     >
-                      â†’
+                      →
                     </span>
                   </Link>
                 </li>

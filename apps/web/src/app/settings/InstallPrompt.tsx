@@ -41,7 +41,7 @@ export function InstallPrompt() {
         disabled={status === "installing"}
         className="inline-flex min-h-11 items-center rounded-full bg-accent px-5 text-sm font-medium text-white shadow-quiet transition-colors hover:bg-accent-ink disabled:opacity-50"
       >
-        {status === "installing" ? "Installingâ€¦" : "Install YOU'D LIKE"}
+        {status === "installing" ? "Installing…" : "Install YOU'D LIKE"}
       </button>
     );
   }
