@@ -12,6 +12,8 @@
 // Tool implementations live in ./mcp-tools.ts (shared with unit tests).
 
 import { tools, toolHandlers } from "./mcp-tools.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { authenticateMcpRequest } from "./mcp-auth.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const ALLOWED_ORIGINS = (Deno.env.get("MCP_ALLOWED_ORIGINS") ?? "*")
@@ -69,17 +71,6 @@ function result(id: unknown, result: unknown) {
 
 function error(id: unknown, code: number, message: string) {
   return { jsonrpc: "2.0", id, error: { code, message } };
-}
-
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
-    const payload = atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"));
-    return JSON.parse(payload);
-  } catch {
-    return null;
-  }
 }
 
 async function handleMessage(
@@ -163,35 +154,17 @@ Deno.serve(async (request: Request) => {
     return json({ error: "Not found" }, 404, cors);
   }
 
-  // Authentication: the MCP client must supply the user's Recommendly access
-  // token. This proves identity for every tool call without exposing secrets.
-  // Tokens issued via the Supabase OAuth 2.1 server carry a client_id claim;
-  // web-app session tokens do not, so we require it for MCP access.
-  const auth = request.headers.get("Authorization");
-  if (!auth?.startsWith("Bearer ")) {
-    return new Response(null, {
-      status: 401,
-      headers: {
-        ...cors,
-        "WWW-Authenticate": `Bearer resource_metadata="${MCP_RESOURCE_URL}/.well-known/oauth-protected-resource"`,
-      },
-    });
-  }
-  const accessToken = auth.slice(7).trim();
-
-  const payload = decodeJwtPayload(accessToken);
-  if (!payload) {
-    return new Response(null, {
-      status: 401,
-      headers: {
-        ...cors,
-        "WWW-Authenticate": `Bearer resource_metadata="${MCP_RESOURCE_URL}/.well-known/oauth-protected-resource"`,
-      },
-    });
-  }
-  if (typeof payload.client_id !== "string" || !payload.client_id) {
-    return json({ error: "Forbidden: token is not issued via OAuth for MCP access" }, 403, cors);
-  }
+  // Verify token signature and expiry at the HTTP boundary before dispatching
+  // MCP calls. The API repeats getClaims validation for defense in depth.
+  const authClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") ?? "");
+  const authResult = await authenticateMcpRequest(
+    request.headers.get("Authorization"),
+    (token) => authClient.auth.getClaims(token),
+    cors,
+    `${MCP_RESOURCE_URL}/.well-known/oauth-protected-resource`,
+  );
+  if ("response" in authResult) return authResult.response;
+  const accessToken = authResult.accessToken;
 
   let body: unknown;
   try {
