@@ -50,6 +50,7 @@ export default function NotificationsPage() {
   }
 
   async function handleTransition(n: AppNotification, status: "APPROVED" | "REJECTED") {
+    if (!n.reference_id) return;
     setActionLoading(n.id + status);
     try {
       await transitionSubscription(n.reference_id, status);
@@ -79,7 +80,10 @@ export default function NotificationsPage() {
   const read = items.filter((n) => n.read_at);
 
   function row(n: AppNotification, isUnread: boolean) {
-    const isRequest = n.type === "subscription_request" && n.reference_type === "subscription";
+    const isRequest =
+      n.type === "subscription_request" &&
+      n.reference_type === "subscription" &&
+      n.reference_id !== null;
     return (
       <li key={n.id} className={`flex gap-4 py-5 ${isUnread ? "" : "opacity-70"}`}>
         <Avatar
