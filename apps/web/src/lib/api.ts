@@ -159,12 +159,12 @@ export interface SubscriptionRecord {
 export interface AppNotification {
   id: string;
   type: string;
-  actor_user_id: string;
-  reference_type: string;
-  reference_id: string;
+  actor_user_id: string | null;
+  reference_type: string | null;
+  reference_id: string | null;
   read_at: string | null;
   created_at: string;
-  profiles: { id: string; display_name: string; avatar_url: string | null };
+  profiles: { id: string; display_name: string; avatar_url: string | null } | null;
 }
 export async function searchUsers(q: string): Promise<PublicProfile[]> {
   const res = await fetch(apiUrl(`/v1/users?q=${encodeURIComponent(q)}`), { headers: await getAuthHeaders() });

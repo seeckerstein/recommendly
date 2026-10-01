@@ -89,12 +89,16 @@ export default function NotificationsPage() {
         />
         <div className="min-w-0 flex-1">
           <p className="text-[15px] leading-snug text-ink">
-            <Link
-              href={`/discover/${n.actor_user_id}`}
-              className="font-medium underline-offset-4 hover:underline"
-            >
-              {n.profiles?.display_name ?? "Someone"}
-            </Link>{" "}
+            {n.actor_user_id ? (
+              <Link
+                href={`/discover/${n.actor_user_id}`}
+                className="font-medium underline-offset-4 hover:underline"
+              >
+                {n.profiles?.display_name ?? "Someone"}
+              </Link>
+            ) : (
+              <span className="font-medium">Former member</span>
+            )}{" "}
             <span className="text-ink-soft">{typeLabels[n.type] ?? n.type}</span>
           </p>
           <time dateTime={n.created_at} className="mt-1 block text-xs text-ink-faint">
@@ -120,6 +124,18 @@ export default function NotificationsPage() {
                 {actionLoading === n.id + "REJECTED" ? "…" : "Decline"}
               </Button>
             </div>
+          )}
+
+          {isRequest && isUnread && !n.actor_user_id && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => handleMarkRead(n)}
+              disabled={actionLoading === n.id + "read"}
+              className="mt-3"
+            >
+              {actionLoading === n.id + "read" ? "..." : "Ignore"}
+            </Button>
           )}
 
           {!isRequest && isUnread && (
