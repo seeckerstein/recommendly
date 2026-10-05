@@ -550,6 +550,75 @@ Only then expand into the next application layer when the product plan requires 
 
 ---
 
+## 12. Agent anti-stall / recovery rules
+
+This project has previously lost time when an agent became stuck around its editing/tooling workflow. Avoid repeating that pattern.
+
+### Do not depend on a "patch" workflow
+
+Do **not** assume an `apply_patch`, patch-file, or patch-oriented editing mechanism exists or is reliable in the current agent environment.
+
+When a patch mechanism is unavailable, failing, or repeatedly producing no usable result:
+
+- stop retrying the same patch operation;
+- edit the target file directly using the available repository/file-write mechanism;
+- make the smallest complete file change needed;
+- re-read the file and inspect the diff immediately afterward;
+- do not create patch/temp files merely to work around the missing mechanism.
+
+A failed editing tool is an implementation detail, not a reason to keep the task blocked.
+
+### Use bounded investigation
+
+When a command, UI, integration, or tool fails repeatedly:
+
+1. capture the actual error/evidence;
+2. try the most plausible alternative once or twice;
+3. if the same approach continues to fail, change strategy;
+4. document the blocker and continue with whatever can be verified safely.
+
+Do not loop indefinitely on one command, one dashboard page, one API call, or one tool.
+
+### Separate diagnosis from implementation
+
+Do not keep changing code while still trying to determine what the problem is.
+
+Use this sequence:
+
+```text
+reproduce -> identify root cause -> make smallest change -> validate -> report
+```
+
+If the task is explicitly read-only, do not cross the boundary into editing just because a defect is discovered.
+
+### Prefer a stopping condition
+
+Every investigation should have a concrete completion condition, such as:
+
+- the suspected bug is reproduced;
+- the root cause is identified;
+- the relevant tests pass;
+- the requested files were inspected;
+- the current state is safe to commit;
+- or the environment is proven to be the blocker.
+
+Once that condition is met, stop expanding the investigation unless the user requested more.
+
+### Do not confuse tool failure with product failure
+
+A broken local command, unavailable CLI wrapper, dashboard issue, or agent-tool limitation does not by itself justify architectural changes.
+
+First find the narrowest workaround. Preserve the application architecture unless the product requirement actually changed.
+
+### When blocked, report instead of spinning
+
+If progress is blocked by missing credentials, unavailable software, broken external tooling, or an unsafe remote-state ambiguity:
+
+- say what was verified;
+- say exactly what is blocked;
+- say what safe next action is required;
+- do not burn the remaining task by repeatedly attempting the same blocked path.
+
 ## 12. Change workflow for agents
 
 Before editing:
