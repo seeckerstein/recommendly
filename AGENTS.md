@@ -655,21 +655,137 @@ For destructive or remote operations, state the environment and exact effect bef
 
 ## 13. Git / checkpoint discipline
 
-Prefer small, coherent commits.
+**Git is the source-of-truth workflow for application changes. Do not bypass it.**
 
-A checkpoint commit should contain one logical milestone, not unrelated cleanup.
+The normal flow is:
 
-Before committing:
+```text
+inspect working tree
+    -> create/use the correct feature branch
+    -> edit files
+    -> inspect diff
+    -> run relevant test/validation scripts
+    -> fix failures
+    -> inspect diff again
+    -> commit one coherent change
+    -> push the branch when requested
+    -> deploy through the repository's normal deployment workflow when requested
+```
 
-- inspect `git diff --check`;
-- inspect `git status`;
-- verify tests/build/checks relevant to the change;
-- verify no temp/patch/secrets are included;
-- confirm the commit title describes the actual change.
+### Git rules
 
-Do not push or deploy unless the user explicitly asks for it or it is an unavoidable part of the requested workflow.
+- Never bypass Git by making undocumented changes directly in a remote environment.
+- Do not treat a GitHub file-edit/API operation as a replacement for the repository's normal local Git workflow.
+- Work on an appropriate branch. Do not make feature work directly on `main` unless the user explicitly instructs it.
+- Check `git status` before editing and before committing.
+- Check the diff before and after validation.
+- Keep commits small and logically coherent.
+- Do not mix unrelated cleanup/refactors into a feature or bug-fix commit.
+- Do not create a commit merely to make the tree "look clean"; the commit must represent a real checkpoint.
+- Run the repository's relevant test scripts before committing code changes.
+- For database/auth/security changes, run the database/RLS tests as well as the relevant unit/type/build checks.
+- Do not use `--no-verify` to bypass hooks unless the user explicitly authorizes it and there is a documented reason.
+- Do not force-push, reset away work, amend published commits, or rewrite history unless explicitly requested.
+- Do not discard user changes because they complicate the task. Inspect and preserve them.
+- Never claim a commit, push, test, or deploy happened unless it actually happened.
 
-Do not rewrite history to make a prior checkpoint look cleaner unless explicitly required.
+### Commit gate
+
+A code change is not ready to commit until:
+
+1. the working tree contains only intentional changes;
+2. the relevant test/validation scripts have been run;
+3. failures are resolved or explicitly reported;
+4. `git diff --check` is clean;
+5. the final diff matches the requested scope.
+
+For a checkpoint, report the commit hash and the tests/checks actually run.
+
+### Push gate
+
+Pushing is a separate action from committing.
+
+- Commit locally first.
+- Verify the commit and branch.
+- Push only when the user asks for a push or the task explicitly requires publishing the branch.
+- Never silently push to `main`.
+- Never silently force-push.
+- After pushing, verify the remote branch/commit if the workflow requires it.
+
+### Deploy gate
+
+Deployment is separate from editing and separate from committing.
+
+- Do not deploy merely because code compiles.
+- Do not deploy before the relevant tests and acceptance checks pass.
+- Do not make ad-hoc production changes to "fix" a failed deployment.
+- Prefer deploying the exact Git commit that was validated.
+- If deployment is not requested, stop after validation/commit as appropriate.
+
+### Supabase: migrations are the only normal path for schema changes
+
+**Never change the Supabase schema directly in the dashboard, SQL editor, or another remote-only mechanism and then leave Git unaware of the change.**
+
+The required flow for schema/database behavior changes is:
+
+```text
+edit SQL migration in repository
+    -> review migration
+    -> run local Supabase reset/tests
+    -> commit migration
+    -> push when requested
+    -> deploy migration to the intended Supabase environment with the Supabase CLI
+    -> verify remote migration/state
+```
+
+Rules:
+
+- Every schema change must exist as a committed migration.
+- Do not use the Supabase dashboard as the source of truth for schema changes.
+- Do not make a remote SQL change first and "backfill" a migration later unless an emergency recovery explicitly requires it.
+- Never point development tooling or migrations at production accidentally.
+- Before any remote Supabase command, identify the target project/environment explicitly.
+- Use the project-local Supabase CLI when appropriate.
+- Run `supabase db reset` / `pnpm test:db` locally for migration changes before remote deployment.
+- Treat remote migration deployment as a deployment action, not a substitute for committing the migration.
+- After remote deployment, verify the migration/state rather than assuming success.
+- If a migration needs correction, add a new migration rather than silently editing an already-applied migration.
+
+### Vercel: repository state is the source of deployed application code
+
+For Vercel and similar deployment platforms, do not bypass the repository by editing application code or configuration only in the hosting dashboard.
+
+Normal flow:
+
+```text
+change repository
+    -> test/build
+    -> commit
+    -> push
+    -> deploy through the linked Git workflow / approved deployment mechanism
+    -> verify deployment
+```
+
+Rules:
+
+- Application code must be changed in Git, not only in the Vercel dashboard.
+- Prefer the repository-linked Vercel deployment flow for code deployments.
+- Do not make manual production code/configuration edits in the Vercel dashboard when the same change belongs in the repository.
+- If a Vercel project setting genuinely must be managed remotely (for example, a secret, domain, integration, or platform setting), treat that as infrastructure state and make the change deliberately, document it when appropriate, and do not pretend it is represented by a source-code commit.
+- Never casually change production environment variables, domains, deployment settings, or project configuration.
+- Verify the target Vercel project/environment before making a remote change.
+- When possible, deploy the exact Git commit that passed validation.
+- Do not use an ad-hoc direct deployment to hide or bypass a broken Git-based workflow.
+- If a deployment fails, diagnose the deployment; do not patch production manually and leave the repository inconsistent.
+
+### Other external systems
+
+The same principle applies to other managed services:
+
+- code/configuration that belongs in the repository must be changed in the repository first;
+- remote deployment/synchronization comes after validation and commit;
+- direct dashboard edits are exceptions for true platform state, not a parallel development workflow;
+- remote state must never silently diverge from the repository's intended state.
 
 ---
 
