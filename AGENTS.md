@@ -833,6 +833,11 @@ A good implementation response should make the evidence easy to audit:
 - **Contract alignment:** whether API/domain/MCP/UI/docs were reconciled.
 - **Remaining:** only concrete known risks or follow-ups.
 
+- Before changing project code to resolve a tooling error, distinguish
+  between a project failure and a local-agent environment limitation.
+  Do not modify application code, migrations, or configuration to work
+  around a missing local executable or unrelated tooling limitation.
+
 Do not claim a test, deployment, or verification happened unless it actually happened.
 
 ---
@@ -845,3 +850,23 @@ When in doubt, choose the path that preserves these four properties:
 2. **the database and migrations are trustworthy sources of truth**;
 3. **every permission-sensitive behavior has a negative test**;
 4. **the smallest change that fixes the real problem wins**.
+
+### Local Supabase / Docker Environment
+
+- Use the project-local Supabase CLI for local Supabase operations:
+  `npx supabase ...`
+- Do not require a globally installed `psql` or Docker CLI for normal
+  Supabase development and testing.
+- In the current Windows development environment, Docker Desktop and the
+  local Supabase stack are available to the Supabase CLI, but the Docker CLI
+  executable may not be exposed on the PATH available to Codex subprocesses.
+- Do not attempt to reinstall, reconfigure, or modify Docker Desktop, PATH,
+  or project configuration merely because direct `docker` or `psql` commands
+  are unavailable from the Codex shell.
+- Prefer `npx supabase status`, `npx supabase db reset`, and
+  `npx supabase test db` for local database operations.
+- If `npx supabase test db` runs successfully, treat the local Supabase
+  environment as operational even if direct `docker`/`psql` commands are
+  unavailable.
+- If local Supabase testing fails, diagnose the actual Supabase CLI/database
+  failure before attempting environment changes.
