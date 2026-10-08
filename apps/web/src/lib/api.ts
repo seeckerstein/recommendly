@@ -227,23 +227,50 @@ export async function markNotificationRead(notificationId: string): Promise<void
   if (!res.ok) throw new Error(`Failed to mark read (${res.status})`);
 }
 
-export async function getEmailNotificationSettings(): Promise<boolean> {
+export interface EmailNotificationSettingsValue {
+  email_contact_requests: boolean;
+  email_weekly_recommendations: boolean;
+}
+
+export async function getEmailNotificationSettings(): Promise<EmailNotificationSettingsValue> {
   const res = await fetch(apiUrl("/v1/settings/email-notifications"), {
     headers: await getAuthHeaders(),
   });
   if (!res.ok) throw new Error(`Failed to load email notification settings (${res.status})`);
   const json = await res.json();
-  return json.data?.email_contact_requests ?? true;
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) throw new Error("Not authenticated");
+  const { data: weeklySetting, error: weeklyError } = await supabase
+    .from("user_settings")
+    .select("email_weekly_recommendations")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (weeklyError) throw new Error(weeklyError.message);
+  return {
+    email_contact_requests: json.data?.email_contact_requests ?? true,
+    email_weekly_recommendations: weeklySetting?.email_weekly_recommendations ?? true,
+  };
 }
 
-export async function updateEmailNotificationSettings(enabled: boolean): Promise<void> {
-  const res = await fetch(apiUrl("/v1/settings/email-notifications"), {
-    method: "PATCH",
-    headers: await getAuthHeaders(),
-    body: JSON.stringify({ email_contact_requests: enabled }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error ?? `Failed to update email notification settings (${res.status})`);
+export async function updateEmailNotificationSettings(settings: Partial<EmailNotificationSettingsValue>): Promise<void> {
+  if (settings.email_contact_requests !== undefined) {
+    const res = await fetch(apiUrl("/v1/settings/email-notifications"), {
+      method: "PATCH",
+      headers: await getAuthHeaders(),
+      body: JSON.stringify({ email_contact_requests: settings.email_contact_requests }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(err.error ?? `Failed to update email notification settings (${res.status})`);
+    }
+  }
+  if (settings.email_weekly_recommendations !== undefined) {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) throw new Error("Not authenticated");
+    const { error } = await supabase
+      .from("user_settings")
+      .update({ email_weekly_recommendations: settings.email_weekly_recommendations })
+      .eq("user_id", user.id);
+    if (error) throw new Error(error.message);
   }
 }

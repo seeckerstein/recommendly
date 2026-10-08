@@ -15,6 +15,19 @@ This repository intentionally starts with the Supabase backend foundation. The m
 
 Never connect development MCP tooling to production. Commit every schema change as a migration.
 
+## Weekly recommendation email
+
+The digest runs Fridays at 16:00 UTC (the app has no per-user timezone setting). Deploy `weekly-recommendations-email` with `RESEND_API_KEY` and `WEEKLY_DIGEST_CRON_SECRET` set as Edge Function secrets. The database migration installs Vault but leaves delivery unscheduled. After adding the function URL, matching bearer secret, and production publishable key to Vault, activate it by calling `public.enable_weekly_recommendations_email_schedule()` as `postgres`:
+
+```sql
+select vault.create_secret('https://<project-ref>.supabase.co/functions/v1/weekly-recommendations-email', 'weekly_digest_function_url');
+select vault.create_secret('<same value as WEEKLY_DIGEST_CRON_SECRET>', 'weekly_digest_cron_secret');
+select vault.create_secret('<production publishable key>', 'weekly_digest_publishable_key');
+select public.enable_weekly_recommendations_email_schedule();
+```
+
+The digest skips accounts with no currently accessible recommendations. Its database query applies the same `can_view_recommendation` predicate as recommendation RLS.
+
 ## Repository map
 
 - `supabase/migrations`: canonical Postgres schema, RLS, and database functions

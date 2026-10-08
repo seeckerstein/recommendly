@@ -1,6 +1,6 @@
 ﻿begin;
 create extension if not exists pgtap;
-select plan(31);
+select plan(40);
 
 -- Seed users, profiles, and a private recommendation.
 insert into auth.users (id, aud, role, email) values
@@ -9,6 +9,27 @@ insert into auth.users (id, aud, role, email) values
   ('00000000-0000-0000-0000-000000000003', 'authenticated', 'authenticated', 'other@example.test');
 insert into public.recommendations (id, user_id, category_id, comment) values
   ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', (select id from public.categories where slug='book'), 'private note about a great book');
+
+select is(
+  (select count(*) from public.weekly_digest_recommendations('00000000-0000-0000-0000-000000000001')),
+  1::bigint,
+  '[weekly-email] digest query includes recommendations visible to its recipient'
+);
+select is(
+  (select count(*) from public.weekly_digest_recommendations('00000000-0000-0000-0000-000000000002')),
+  0::bigint,
+  '[weekly-email] digest query excludes recommendations the recipient cannot access'
+);
+select is(
+  (select count(*) from cron.job where jobname = 'weekly-recommendations-email'),
+  0::bigint,
+  '[weekly-email] schedule stays disabled until its Vault secrets exist'
+);
+select is(
+  public.weekly_digest_cron_schedule(),
+  '0 16 * * 5'::text,
+  '[weekly-email] guarded schedule targets Fridays at 16:00 UTC'
+);
 
 create or replace function pg_temp._as(uid text) returns void language sql as $$
   select set_config('request.jwt.claim.sub', uid, true);
@@ -34,6 +55,44 @@ reset role;
 
 insert into auth.users (id, aud, role, email)
 values ('44444444-4444-4444-4444-444444444444', 'authenticated', 'authenticated', 'fresh@example.test');
+
+select is(
+  (select email_weekly_recommendations from public.user_settings where user_id = '44444444-4444-4444-4444-444444444444'),
+  true,
+  '[weekly-email] new users receive the enabled default'
+);
+select is(
+  (select email_weekly_recommendations from public.user_settings where user_id = '00000000-0000-0000-0000-000000000001'),
+  true,
+  '[weekly-email] existing users are backfilled enabled'
+);
+set local role authenticated;
+select pg_temp._as('00000000-0000-0000-0000-000000000001');
+update public.user_settings set email_weekly_recommendations = false where user_id = '00000000-0000-0000-0000-000000000001';
+select is(
+  (select email_weekly_recommendations from public.user_settings where user_id = '00000000-0000-0000-0000-000000000001'),
+  false,
+  '[weekly-email] opting out disables digest delivery'
+);
+reset role;
+set local role authenticated;
+select pg_temp._as('00000000-0000-0000-0000-000000000002');
+update public.user_settings set email_weekly_recommendations = true where user_id = '00000000-0000-0000-0000-000000000001';
+reset role;
+select is(
+  (select email_weekly_recommendations from public.user_settings where user_id = '00000000-0000-0000-0000-000000000001'),
+  false,
+  '[weekly-email] another user cannot change the preference'
+);
+set local role authenticated;
+select pg_temp._as('00000000-0000-0000-0000-000000000001');
+update public.user_settings set email_weekly_recommendations = true where user_id = '00000000-0000-0000-0000-000000000001';
+select is(
+  (select email_weekly_recommendations from public.user_settings where user_id = '00000000-0000-0000-0000-000000000001'),
+  true,
+  '[weekly-email] opting back in enables digest delivery'
+);
+reset role;
 
 select is(
   (select count(*) from public.profiles where id = '44444444-4444-4444-4444-444444444444'),
