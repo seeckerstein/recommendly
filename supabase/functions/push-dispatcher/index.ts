@@ -1,8 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import {
-  buildNotificationPayload,
-  sendPushNotification,
-} from "../_shared/push-payload.ts";
+import { buildNotificationPayload } from "../_shared/push-payload.ts";
+import { sendPushNotification } from "../_shared/webpush.ts";
 
 const serviceClient = createClient(
   Deno.env.get("SUPABASE_URL")!,
