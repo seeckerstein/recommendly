@@ -3,6 +3,7 @@ import { Page, PageTitle } from "@/components/ui/Card";
 import { InstallPrompt } from "./InstallPrompt";
 import { DeleteAccountSection } from "./DeleteAccountSection";
 import { EmailNotificationSettings } from "./EmailNotificationSettings";
+import { PushNotificationSettings } from "./PushNotificationSettings";
 
 const sections = [
   {
@@ -135,6 +136,7 @@ export default function SettingsPage() {
             <p className="mt-2 max-w-prose text-[15px] leading-relaxed text-ink-soft">
               Sign out of YOU'D LIKE here.
             </p>
+            <PushNotificationSettings />
             <form action="/auth/logout" method="post" className="mt-4">
               <button
                 type="submit"

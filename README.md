@@ -15,6 +15,25 @@ This repository intentionally starts with the Supabase backend foundation. The m
 
 Never connect development MCP tooling to production. Commit every schema change as a migration.
 
+## Push notifications
+
+Browser push (Chrome desktop and installed Android PWA) is layered on the
+existing Activity notifications; email behaviour is unchanged and separate.
+The four Activity types (`subscription_request`, `subscription_approved`,
+`subscription_rejected`, `access_revoked`) are dispatched asynchronously to
+all registered devices of the recipient.
+
+Provision push by adding these Vault secrets (matching the dispatcher Edge
+Function secrets):
+
+```sql
+select vault.create_secret('https://<project-ref>.supabase.co/functions/v1/push-dispatcher', 'push_dispatcher_function_url');
+select vault.create_secret('<same value as PUSH_DISPATCHER_SECRET>', 'push_dispatcher_secret');
+```
+
+Set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `PUSH_DISPATCHER_SECRET` as
+Edge Function secrets, and expose `NEXT_PUBLIC_VAPID_PUBLIC_KEY` to the web
+client. Push stays silently disabled until Vault is provisioned.
 ## Weekly recommendation email
 
 The digest runs Fridays at 16:00 UTC (the app has no per-user timezone setting). Deploy `weekly-recommendations-email` with `RESEND_API_KEY` and `WEEKLY_DIGEST_CRON_SECRET` set as Edge Function secrets. The database migration installs Vault but leaves delivery unscheduled. After adding the function URL, matching bearer secret, and production publishable key to Vault, activate it by calling `public.enable_weekly_recommendations_email_schedule()` as `postgres`:

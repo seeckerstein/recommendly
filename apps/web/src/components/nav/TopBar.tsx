@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUnreadNotifications } from "@/lib/useNotifications";
+import { syncBrowserTabBadge } from "@/lib/badge";
 import { Logo } from "@/components/brand/Logo";
 import { notificationsIcon } from "./nav-items";
 
 export function TopBar() {
   const pathname = usePathname();
   const unreadCount = useUnreadNotifications();
+  syncBrowserTabBadge(unreadCount);
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 

@@ -22,6 +22,28 @@ export interface Profile {
   avatar_url: string | null;
   profile_visibility: "PRIVATE" | "PUBLIC";
 }
+export async function registerPushSubscription(input: { endpoint: string; p256dh: string; auth: string; user_agent?: string }) {
+  const res = await fetch(apiUrl("/v1/push-subscriptions"), {
+    method: "POST",
+    headers: await getAuthHeaders(),
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error ?? `Failed to register push subscription (${res.status})`);
+  }
+}
+export async function removePushSubscription(endpoint: string) {
+  const res = await fetch(apiUrl("/v1/push-subscriptions"), {
+    method: "DELETE",
+    headers: await getAuthHeaders(),
+    body: JSON.stringify({ endpoint }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error ?? `Failed to remove push subscription (${res.status})`);
+  }
+}
 export async function fetchMe(): Promise<Profile> {
   const res = await fetch(apiUrl("/v1/me"), { headers: await getAuthHeaders() });
   if (!res.ok) throw new Error(`Failed to load profile (${res.status})`);

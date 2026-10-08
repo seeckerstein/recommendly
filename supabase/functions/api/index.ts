@@ -498,6 +498,57 @@ Deno.serve(async (request) => {
     return json({ data }, 200);
   }
 
+
+  // ---------------------------------------------------------------------------
+  // Push subscriptions: POST /v1/push-subscriptions (register/upsert)
+  // ---------------------------------------------------------------------------
+  if (request.method === "POST" && url.pathname.endsWith("/v1/push-subscriptions")) {
+    let body;
+    try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
+    const { endpoint, keys, user_agent: userAgent } = body ?? {};
+    const p256dh = keys?.p256dh;
+    const auth = keys?.auth;
+    if (typeof endpoint !== "string" || !endpoint.startsWith("https://") || typeof p256dh !== "string" || typeof auth !== "string") {
+      return json({ error: "endpoint and keys.p256dh/keys.auth are required" }, 400);
+    }
+
+    const { data: { user } } = await getAuthUser(client, authorization);
+    if (!user) return json({ error: "Invalid authentication token" }, 401);
+
+    // Ownership is derived from the verified token, never from the request body.
+    const { data, error } = await client
+      .from("push_subscriptions")
+      .upsert(
+        { user_id: user.id, endpoint, p256dh, auth, user_agent: typeof userAgent === "string" ? userAgent.slice(0, 256) : null },
+        { onConflict: "endpoint" },
+      )
+      .select()
+      .single();
+    return json(error ? { error: error.message } : { data }, error ? 400 : 201);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Push subscriptions: DELETE /v1/push-subscriptions (remove current device)
+  // ---------------------------------------------------------------------------
+  if (request.method === "DELETE" && url.pathname.endsWith("/v1/push-subscriptions")) {
+    let body;
+    try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
+    const endpoint = body?.endpoint;
+    if (typeof endpoint !== "string") return json({ error: "endpoint is required" }, 400);
+
+    const { data: { user } } = await getAuthUser(client, authorization);
+    if (!user) return json({ error: "Invalid authentication token" }, 401);
+
+    // The endpoint filter plus RLS ensures a user can only remove their own rows.
+    const { data, error } = await client
+      .from("push_subscriptions")
+      .delete()
+      .eq("endpoint", endpoint)
+      .eq("user_id", user.id)
+      .select();
+    if (error) return json({ error: error.message }, 400);
+    return json({ data }, 200);
+  }
   // ---------------------------------------------------------------------------
   // Notifications: GET /v1/notifications
   // ---------------------------------------------------------------------------

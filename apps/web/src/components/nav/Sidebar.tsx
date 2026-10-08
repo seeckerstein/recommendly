@@ -5,10 +5,12 @@ import { usePathname } from "next/navigation";
 import { navItems, isNavItemActive, notificationsIcon } from "./nav-items";
 import { Logo } from "@/components/brand/Logo";
 import { useUnreadNotifications } from "@/lib/useNotifications";
+import { syncBrowserTabBadge } from "@/lib/badge";
 
 export function Sidebar() {
   const pathname = usePathname();
   const unreadCount = useUnreadNotifications();
+  syncBrowserTabBadge(unreadCount);
 
   const primary = navItems.filter((i) => !i.accent && !i.footer);
   const add = navItems.find((i) => i.accent);
