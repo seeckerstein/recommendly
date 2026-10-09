@@ -10,9 +10,11 @@ import { Avatar } from "@/components/ui/Avatar";
 import { formatRelative } from "@/lib/recommendation-display";
 import {
   getNotifications,
+  getSubscriptions,
   markNotificationRead,
   transitionSubscription,
   type AppNotification,
+  type SubscriptionRecord,
 } from "@/lib/api";
 
 const typeLabels: Record<string, string> = {
@@ -24,6 +26,7 @@ const typeLabels: Record<string, string> = {
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<AppNotification[] | null>(null);
+  const [sent, setSent] = useState<SubscriptionRecord[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -31,8 +34,14 @@ export default function NotificationsPage() {
   function load() {
     setLoading(true);
     setError(null);
-    getNotifications()
-      .then(setNotifications)
+    Promise.all([
+      getNotifications(),
+      getSubscriptions("pending_out").catch(() => []),
+    ])
+      .then(([items, outgoing]) => {
+        setNotifications(items);
+        setSent(outgoing);
+      })
       .catch((e) => setError((e as Error).message))
       .finally(() => setLoading(false));
   }
@@ -196,6 +205,39 @@ export default function NotificationsPage() {
               title="Nothing yet"
               description="When someone asks for access to your shelf, or replies to your request, it lands here."
             />
+          )}
+
+          {sent && sent.length > 0 && (
+            <section>
+              <SectionHeading>Sent requests</SectionHeading>
+              <ul className="mt-2 divide-y divide-line">
+                {sent.map((s) => (
+                  <li key={s.id} className="flex items-center gap-4 py-5">
+                    <Avatar
+                      name={s.profiles?.display_name ?? "User"}
+                      src={s.profiles?.avatar_url ?? null}
+                      size={40}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[15px] leading-snug text-ink">
+                        <Link
+                          href={`/discover/${s.publisher_id}`}
+                          className="font-medium underline-offset-4 hover:underline"
+                        >
+                          {s.profiles?.display_name ?? "Someone"}
+                        </Link>{" "}
+                        <span className="text-ink-soft">
+                          waiting for their approval of your access request
+                        </span>
+                      </p>
+                      <time dateTime={s.requested_at} className="mt-1 block text-xs text-ink-faint">
+                        {formatRelative(s.requested_at)}
+                      </time>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
 
           {unread.length > 0 && (

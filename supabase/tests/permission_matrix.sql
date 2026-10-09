@@ -1,6 +1,6 @@
 ﻿begin;
 create extension if not exists pgtap;
-select plan(40);
+select plan(63);
 
 -- Seed users, profiles, and a private recommendation.
 insert into auth.users (id, aud, role, email) values
@@ -276,6 +276,8 @@ reset role;
 
 -- ============================================================
 -- SECTION 7: NOTIFICATION RECIPIENT ISOLATION (RLS)
+-- Notifications are system-generated. Users cannot insert them
+-- for one another; lifecycle RPCs create them server-side.
 -- ============================================================
 
 insert into public.notifications (user_id, type, actor_user_id, reference_type, reference_id)
@@ -308,22 +310,20 @@ select is(
   '[notif-rls] User B cannot see User A notifications'
 );
 
-
--- authenticated role has INSERT privilege on notifications
-select ok(
-  has_table_privilege('authenticated', 'public.notifications', 'INSERT'),
-  '[notif-grant] authenticated role has INSERT privilege on notifications'
-);
-
--- User A can create a notification for User B (acting as actor)
-set local role authenticated;
+-- User A cannot create a notification addressed to User B
 select pg_temp._as('00000000-0000-0000-0000-000000000001');
-insert into public.notifications (user_id, type, actor_user_id, reference_type, reference_id)
-values ('00000000-0000-0000-0000-000000000002', 'subscription_request', '00000000-0000-0000-0000-000000000001', 'subscription', '00000000-0000-0000-0000-000000000100');
 select is(
-  (select count(*) from public.notifications where user_id = '00000000-0000-0000-0000-000000000002' and actor_user_id = '00000000-0000-0000-0000-000000000001' and type = 'subscription_request'),
-  1::bigint,
-  '[notif-grant] User A can insert notification addressed to User B'
+  (select count(*) from public.notifications where user_id = '00000000-0000-0000-0000-000000000002' and actor_user_id = '00000000-0000-0000-0000-000000000001'),
+  0::bigint,
+  '[notif-rls] no cross-user notification before attempted insert'
+);
+select throws_ok(
+  $$insert into public.notifications (user_id, type, actor_user_id, reference_type, reference_id) values ('00000000-0000-0000-0000-000000000002', 'subscription_request', '00000000-0000-0000-0000-000000000001', 'subscription', '00000000-0000-0000-0000-000000000100')$$
+);
+select is(
+  (select count(*) from public.notifications where user_id = '00000000-0000-0000-0000-000000000002' and actor_user_id = '00000000-0000-0000-0000-000000000001'),
+  0::bigint,
+  '[notif-rls] User A cannot insert notification addressed to User B'
 );
 
 -- User A cannot modify User B notification
@@ -334,20 +334,206 @@ select is(
   '[notif-rls] User A cannot modify User B notification'
 );
 
--- Lifecycle notification types created correctly
-insert into public.notifications (user_id, type, actor_user_id, reference_type, reference_id)
-values
-  ('00000000-0000-0000-0000-000000000002', 'subscription_approved', '00000000-0000-0000-0000-000000000001', 'subscription', '00000000-0000-0000-0000-000000000101'),
-  ('00000000-0000-0000-0000-000000000002', 'subscription_rejected', '00000000-0000-0000-0000-000000000001', 'subscription', '00000000-0000-0000-0000-000000000102'),
-  ('00000000-0000-0000-0000-000000000002', 'access_revoked', '00000000-0000-0000-0000-000000000001', 'subscription', '00000000-0000-0000-0000-000000000103');
+reset role;
+
+-- ============================================================
+-- SECTION 8: SUBSCRIPTION LIFECYCLE NOTIFICATIONS VIA RPC (DIRECTIONAL)
+-- Access is directional: approving A -> B does not create B -> A.
+-- ============================================================
+
+-- A requests B: A -> B = PENDING, notification for B.
+set local role authenticated;
+select pg_temp._as('00000000-0000-0000-0000-000000000001');
 select is(
-  (select count(*) from public.notifications where user_id = '00000000-0000-0000-0000-000000000002' and type in ('subscription_approved','subscription_rejected','access_revoked')),
-  3::bigint,
-  '[notif-lifecycle] approval/rejection/revocation notifications created'
+  (select count(*) from public.notifications where user_id = '00000000-0000-0000-0000-000000000002'),
+  0::bigint,
+  '[sub-notif] no notification for B before request'
+);
+select is(
+  (select status from public.request_subscription('00000000-0000-0000-0000-000000000002')),
+  'PENDING'::public.subscription_status,
+  '[sub-notif] request creates PENDING subscription'
+);
+select pg_temp._as('00000000-0000-0000-0000-000000000002');
+select is(
+  (select count(*) from public.notifications
+    where user_id = '00000000-0000-0000-0000-000000000002'
+      and actor_user_id = '00000000-0000-0000-0000-000000000001'
+      and type = 'subscription_request'
+      and reference_type = 'subscription'),
+  1::bigint,
+  '[sub-notif] request creates subscription_request notification for publisher'
+);
+select is(
+  (select count(*) from public.notifications
+    where user_id = '00000000-0000-0000-0000-000000000002'
+      and type = 'subscription_request'),
+  1::bigint,
+  '[sub-notif] repeated PENDING request does not duplicate notification'
+);
+select pg_temp._as('00000000-0000-0000-0000-000000000002');
+select pg_temp._as('00000000-0000-0000-0000-000000000002');
+select is(
+  (select count(*) from public.notifications where user_id = '00000000-0000-0000-0000-000000000002' and type = 'subscription_request'),
+  1::bigint,
+  '[sub-notif] publisher sees exactly one notification'
+);
+select pg_temp._as('00000000-0000-0000-0000-000000000001');
+select is(
+  (select count(*) from public.notifications where user_id = '00000000-0000-0000-0000-000000000002'),
+  0::bigint,
+  '[sub-notif] subscriber cannot read publisher notification'
+);
+
+-- B approves: A -> B = APPROVED, notification for A, B -> A absent.
+select pg_temp._as('00000000-0000-0000-0000-000000000002');
+select is(
+  (select count(*) from public.notifications where user_id = '00000000-0000-0000-0000-000000000001' and type = 'subscription_approved'),
+  0::bigint,
+  '[sub-notif] no approval notification before transition'
+);
+select is(
+  (select status from public.transition_subscription(
+    (select id from public.subscriptions
+      where subscriber_id = '00000000-0000-0000-0000-000000000001'
+        and publisher_id = '00000000-0000-0000-0000-000000000002'),
+    'APPROVED')),
+  'APPROVED'::public.subscription_status,
+  '[sub-notif] approval transitions A -> B to APPROVED'
+);
+select pg_temp._as('00000000-0000-0000-0000-000000000001');
+select is(
+  (select count(*) from public.notifications
+    where user_id = '00000000-0000-0000-0000-000000000001'
+      and actor_user_id = '00000000-0000-0000-0000-000000000002'
+      and type = 'subscription_approved'
+      and reference_type = 'subscription'),
+  1::bigint,
+  '[sub-notif] approval creates notification for subscriber'
+);
+select is(
+  (select count(*) from public.notifications where user_id = '00000000-0000-0000-0000-000000000001' and type = 'subscription_approved'),
+  1::bigint,
+  '[sub-notif] repeated APPROVED does not duplicate notification'
+);
+select pg_temp._as('00000000-0000-0000-0000-000000000002');
+select is(
+  (select count(*) from public.subscriptions
+    where subscriber_id = '00000000-0000-0000-0000-000000000002'
+      and publisher_id = '00000000-0000-0000-0000-000000000001'),
+  0::bigint,
+  '[sub-dir] approving A -> B does not create B -> A'
+);
+
+-- B independently requests A: B -> A = PENDING.
+select is(
+  (select status from public.request_subscription('00000000-0000-0000-0000-000000000001')),
+  'PENDING'::public.subscription_status,
+  '[sub-dir] B independently requests A -> PENDING'
+);
+select is(
+  (select status from public.subscriptions
+    where subscriber_id = '00000000-0000-0000-0000-000000000002'
+      and publisher_id = '00000000-0000-0000-0000-000000000001'),
+  'PENDING'::public.subscription_status,
+  '[sub-dir] B -> A is PENDING'
+);
+select pg_temp._as('00000000-0000-0000-0000-000000000001');
+select is(
+  (select count(*) from public.notifications
+    where user_id = '00000000-0000-0000-0000-000000000001'
+      and actor_user_id = '00000000-0000-0000-0000-000000000002'
+      and type = 'subscription_request'
+      and reference_type = 'subscription'
+      and reference_id = (select id from public.subscriptions
+        where subscriber_id = '00000000-0000-0000-0000-000000000002'
+          and publisher_id = '00000000-0000-0000-0000-000000000001')),
+  1::bigint,
+  '[sub-dir] reverse request creates subscription_request notification for A'
+);
+
+-- A approves B -> A: both directions now independently APPROVED.
+select pg_temp._as('00000000-0000-0000-0000-000000000001');
+select is(
+  (select status from public.transition_subscription(
+    (select id from public.subscriptions
+      where subscriber_id = '00000000-0000-0000-0000-000000000002'
+        and publisher_id = '00000000-0000-0000-0000-000000000001'),
+    'APPROVED')),
+  'APPROVED'::public.subscription_status,
+  '[sub-dir] A approves B -> A to APPROVED'
+);
+select pg_temp._as('00000000-0000-0000-0000-000000000002');
+select is(
+  (select count(*) from public.notifications
+    where user_id = '00000000-0000-0000-0000-000000000002'
+      and actor_user_id = '00000000-0000-0000-0000-000000000001'
+      and type = 'subscription_approved'
+      and reference_type = 'subscription'
+      and reference_id = (select id from public.subscriptions
+        where subscriber_id = '00000000-0000-0000-0000-000000000002'
+          and publisher_id = '00000000-0000-0000-0000-000000000001')),
+  1::bigint,
+  '[sub-dir] reverse approval creates notification for B'
+);
+select pg_temp._as('00000000-0000-0000-0000-000000000001');
+select is(
+  (select status from public.subscriptions
+    where subscriber_id = '00000000-0000-0000-0000-000000000001'
+      and publisher_id = '00000000-0000-0000-0000-000000000002'),
+  'APPROVED'::public.subscription_status,
+  '[sub-dir] A -> B is APPROVED'
+);
+select is(
+  (select status from public.subscriptions
+    where subscriber_id = '00000000-0000-0000-0000-000000000002'
+      and publisher_id = '00000000-0000-0000-0000-000000000001'),
+  'APPROVED'::public.subscription_status,
+  '[sub-dir] B -> A is APPROVED'
+);
+
+-- B revokes A -> B: REVOKED, notification for A.
+select pg_temp._as('00000000-0000-0000-0000-000000000002');
+select is(
+  (select status from public.transition_subscription(
+    (select id from public.subscriptions
+      where subscriber_id = '00000000-0000-0000-0000-000000000001'
+        and publisher_id = '00000000-0000-0000-0000-000000000002'),
+    'REVOKED')),
+  'REVOKED'::public.subscription_status,
+  '[sub-lifecycle] B revokes A -> B to REVOKED'
+);
+select pg_temp._as('00000000-0000-0000-0000-000000000001');
+select is(
+  (select count(*) from public.notifications where user_id = '00000000-0000-0000-0000-000000000001' and type = 'access_revoked'),
+  1::bigint,
+  '[sub-lifecycle] revocation creates notification for subscriber'
+);
+
+-- A re-requests B from REVOKED: new PENDING; B rejects; notification for A.
+select pg_temp._as('00000000-0000-0000-0000-000000000001');
+select is(
+  (select status from public.request_subscription('00000000-0000-0000-0000-000000000002')),
+  'PENDING'::public.subscription_status,
+  '[sub-lifecycle] re-request after REVOKED creates new PENDING'
+);
+select pg_temp._as('00000000-0000-0000-0000-000000000002');
+select is(
+  (select status from public.transition_subscription(
+    (select id from public.subscriptions
+      where subscriber_id = '00000000-0000-0000-0000-000000000001'
+        and publisher_id = '00000000-0000-0000-0000-000000000002'),
+    'REJECTED')),
+  'REJECTED'::public.subscription_status,
+  '[sub-lifecycle] rejection transitions A -> B to REJECTED'
+);
+select pg_temp._as('00000000-0000-0000-0000-000000000001');
+select is(
+  (select count(*) from public.notifications where user_id = '00000000-0000-0000-0000-000000000001' and type = 'subscription_rejected'),
+  1::bigint,
+  '[sub-lifecycle] rejection creates notification for subscriber'
 );
 
 reset role;
 select * from finish();
 rollback;
-
-

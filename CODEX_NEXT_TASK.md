@@ -1,717 +1,394 @@
-# Recommendly — Background Notifications & Push Delivery
+We are continuing the subscription access/notification bugfix on branch:
 
-## 1. Product goal
+fix-subscription-notifications
 
-Extend the existing Recommendly Activity notification system so that eligible users can receive **real-time browser/PWA push notifications even when Recommendly is not open**.
+IMPORTANT: Before doing anything else, confirm that:
+- supabase/tests/push_subscriptions.sql
+- supabase/tests/permission_matrix.sql
 
-V1 targets **Chrome**.
+are restored to their HEAD/original versions after the previous failed editing attempts.
 
-The feature must support:
+Do NOT start by editing either SQL test file.
+Do NOT use repeated PowerShell string replacements to manipulate SQL.
+Do NOT weaken RLS.
+Do NOT patch production.
+Do NOT commit until the implementation and tests are reviewed and passing.
 
-- Desktop Chrome push notifications.
-- Installed Android PWA push notifications.
-- Android PWA app-icon badge where supported.
-- Browser-tab/favicon unread indicator while Recommendly is open.
-- Multiple browsers/devices per account.
-- Notification click → `/notifications`.
-- Existing Activity/unread behaviour unchanged.
-- Existing email notification behaviour unchanged.
-- Graceful operation when notification permission is denied.
-- Future native iOS/Android push without redesigning the notification domain model.
+==================================================
+1. PRODUCTION BUG TO FIX
+==================================================
 
----
+There is a real production bug in the subscription request flow.
 
-# 2. Core architecture
+Observed production case:
 
-The central rule is:
+Requester:
+johan.eckerstein@vitalaize.com
 
-> **A Recommendly notification is an application event. Push and email are delivery channels.**
+Target/publisher:
+johan.eckerstein@gmail.com
 
-The existing `notifications` table remains the **single source of truth**.
+The subscription request was successfully created, but:
 
-```text
-Application event
-      │
-      ▼
-notifications row
-      │
-      ▼
-delivery fan-out
-   ┌──┴────┐
-   ▼       ▼
- Push    Email
-   │       │
-   ▼       ▼
-Web/PWA  Resend
-```
+- the target/publisher did not receive an Activity notification;
+- no push notification was generated;
+- the requester did not see the outgoing pending request in their list.
 
-Future:
+Production subscription exists with:
+- status = PENDING
+- subscriber_id = requester
+- publisher_id = target
+- no corresponding notification row.
 
-```text
-notifications
-      │
-      ├── Web Push
-      ├── Email
-      ├── APNs / iOS
-      └── FCM / Android
-```
+Current API behavior creates the subscription and then attempts to insert a notification using the normal authenticated client.
 
-Do **not** introduce a platform-specific notification domain model.
+Current notification INSERT RLS requires:
 
----
+actor_user_id = auth.uid()
 
-# 3. Existing notification events
+Therefore a normal authenticated client cannot create a notification addressed to another user. This is expected RLS behavior and must NOT be fixed by weakening the policy.
 
-V1 push delivery applies to the existing four Activity notification types:
+The correct design is:
 
-| Type | Push |
-|---|---|
-| `subscription_request` | Yes |
-| `subscription_approved` | Yes |
-| `subscription_rejected` | Yes |
-| `access_revoked` | Yes |
+- user-facing authorization remains normal authenticated/RLS-based;
+- after the subscription operation has been authorized and successfully performed, trusted server-side code may create the corresponding notification using narrowly scoped elevated/server-side access;
+- recipient and actor must be derived from the trusted subscription operation, NOT blindly accepted from client input;
+- do not turn service-role access into a general authorization bypass.
 
-Future notification types can be added without redesigning the delivery architecture.
+Fix all relevant subscription lifecycle notifications:
 
-No per-event push preferences are required in V1.
+- subscription_request
+- subscription_approved
+- subscription_rejected
+- access_revoked
 
----
+Preserve the existing email behavior.
+Preserve the push notification architecture.
+The notifications table remains the source of truth; push/email are delivery channels.
 
-# 4. Existing email behaviour is a compatibility requirement
+The notification must reference the exact directional subscription that changed.
 
-This is especially important.
+==================================================
+2. CRITICAL BUSINESS RULE:
+   ACCESS IS DIRECTIONAL
+==================================================
 
-The current email behaviour must continue to work exactly as it does today.
+Subscription/access approval is directional.
 
-Currently:
+If User A requests access to User B:
 
-- `subscription_request` can trigger an email through Resend.
-- It respects `user_settings.email_contact_requests`.
-- The other existing Activity events do not currently trigger email.
+A -> B = PENDING
 
-**Do not change those semantics.**
+If B approves that request:
 
-The refactor must not accidentally turn every Activity notification into an email.
+A -> B = APPROVED
 
-The implementation should preserve:
+This means:
 
-- recipient selection
-- email preference logic
-- Resend integration
-- sender address
-- current email content/behaviour
-- existing failure handling
+- A gets the access represented by A -> B.
+- B does NOT automatically get access to A.
+- Do NOT automatically create or approve B -> A.
+- Approval of one direction must never silently approve the reverse direction.
 
-Push permission/preferences must be completely independent from email preferences.
+For B to get access to A:
 
-For example:
+B must separately request:
 
-```text
-Push denied
-    Activity: YES
-    Email: existing preference
-    Push: NO
-```
+B -> A = PENDING
 
----
+and A must separately approve it:
 
-# 5. Push subscriptions
+B -> A = APPROVED
 
-Add a new migration creating a table along the lines of:
+Only when both independent directional relationships are APPROVED should the relationship be considered mutually approved / fully reciprocal:
 
-```text
-push_subscriptions
+A -> B = APPROVED
+B -> A = APPROVED
 
-id
-user_id
-endpoint
-p256dh
-auth
-created_at
-updated_at
-```
+The two directions must remain independent in the database, API, notifications, and UI.
 
-The exact schema should follow the project's existing conventions and the Web Push subscription format.
+Use the existing terminology/fields such as:
+- subscriber_id
+- publisher_id
+- pending_in
+- pending_out
 
-Requirements:
+consistently with this directional model.
 
-- `user_id` references the authenticated profile/user.
-- Multiple subscriptions per user.
-- One subscription represents one browser/device installation.
-- Endpoint uniqueness must prevent duplicate registrations.
-- Appropriate indexes.
-- RLS enabled.
-- A user may only read/manage their own subscriptions.
-- No user may inspect another user's push endpoints.
-- The browser must never be allowed to specify another user's ownership.
-- Ownership comes from the verified authentication context.
+Do NOT introduce a generic "friendship" state that hides the two directional subscriptions.
 
-Device/user-agent metadata may be added if it is genuinely useful for debugging/management, but don't overbuild V1.
+==================================================
+3. REQUIRED BEHAVIOR
+==================================================
 
----
+Verify and, where necessary, correct the complete lifecycle:
 
-# 6. Registration API
+A requests B:
+- A -> B is PENDING
+- B sees an incoming request
+- A sees an outgoing/pending request
+- B -> A remains absent/not approved
 
-Add authenticated application/API support for:
+B approves:
+- A -> B becomes APPROVED
+- notification is created for A
+- B -> A remains absent/not approved
+- B does NOT suddenly gain access to A
 
-### Register/upsert subscription
+B rejects:
+- A -> B becomes REJECTED according to the existing model
+- notification goes to A
+- B -> A remains independent
 
-The client sends the Web Push subscription.
+B revokes A's approved access:
+- A -> B becomes revoked/revoked-equivalent according to existing model
+- notification goes to A
+- B -> A is NOT silently changed
 
-The server derives the user from the authenticated token.
+Then B can independently request A:
+- B -> A becomes PENDING
+- A sees the incoming request
+- B sees the outgoing request
 
-Never accept:
+A approves:
+- B -> A becomes APPROVED
+- notification goes to B
+- now both directions are approved
+- reciprocal access is now valid
 
-```json
-{
-  "user_id": "..."
-}
-```
+Do not change existing intended semantics beyond what is required to enforce this clearly.
 
-as the authority for ownership.
+==================================================
+4. INVESTIGATE THE OUTGOING REQUEST BUG
+==================================================
 
-### Remove subscription
+The production user also reported that the requester could not see their outgoing pending request.
 
-Support removing the current browser/device subscription.
+Inspect the existing API and web UI carefully.
 
-This is important for:
+There is existing subscription GET support for:
+- following
+- subscribers
+- pending_in
+- pending_out
 
-- logout
-- permission changes
-- browser cleanup
-- account switching
+and the frontend has subscription retrieval code.
 
-The implementation must ensure a subscription belonging to Account A cannot accidentally remain associated with Account B after the browser is reused.
+Determine why the actual requester does not see the PENDING outgoing request.
 
----
+Fix the real cause rather than adding a duplicate/parallel mechanism.
 
-# 7. VAPID
+Verify that:
+- pending_in shows requests where the current user is publisher/target;
+- pending_out shows requests where the current user is subscriber/requester;
+- approved access is displayed in the correct direction;
+- rejected/revoked states behave according to the existing product model.
 
-Use standard Web Push/VAPID credentials.
+==================================================
+5. NOTIFICATION SECURITY
+==================================================
 
-The architecture should be:
+Do NOT weaken the existing notification INSERT RLS policy merely to make the tests pass.
 
-```text
-Public VAPID key
-        ↓
-browser/client
+Do NOT allow arbitrary authenticated users to insert notifications for other users.
 
-Private VAPID key
-        ↓
-Supabase secret
-        ↓
-push dispatcher
-```
+Implement a narrowly scoped trusted/server-side notification creation path if required.
 
-Never expose the private VAPID key to the browser or commit it to Git.
+The trusted notification creation must:
+- derive recipient from the authorized subscription operation;
+- derive actor from the authenticated user / trusted operation;
+- use the exact subscription ID as reference_id;
+- use reference_type = subscription;
+- use the correct notification type;
+- not accept arbitrary recipient/actor values from the client as an authorization mechanism.
 
-The exact library/protocol implementation should be chosen based on what works cleanly in the current Supabase Edge Function/Deno environment rather than introducing unnecessary infrastructure.
+Check all four lifecycle operations for actor/recipient correctness.
 
----
+==================================================
+6. TESTS
+==================================================
 
-# 8. Push dispatcher
+First inspect the existing tests and their current baseline.
 
-Use Supabase as the primary push infrastructure.
+Do not blindly rewrite SQL tests.
 
-The preferred architecture is:
+Add or modify the minimum tests necessary to prove the real behavior.
 
-```text
-notifications INSERT
-        ↓
-Supabase asynchronous delivery trigger
-        ↓
-push dispatcher Edge Function
-        ↓
-all subscriptions belonging to recipient
-```
+Required regression coverage:
 
-Supabase Database Webhooks / `pg_net` should be evaluated and used if appropriate for the existing project/runtime.
+A. Notification request
+- A requests B
+- subscription is created
+- notification exists for B
+- notification actor is A
+- notification references the exact subscription
+- push/email behavior remains independent
 
-The important behaviour is:
+B. Approval
+- B approves A
+- A -> B becomes APPROVED
+- notification exists for A
+- actor/recipient/reference are correct
+- B -> A is NOT automatically created/approved
 
-**The creation of the Activity notification must not depend on successful push delivery.**
+C. Rejection
+- correct directional subscription changes
+- notification goes to requester
+- reverse direction is unchanged
 
-If push is unavailable:
+D. Revocation
+- correct directional subscription changes
+- notification goes to the affected user
+- reverse direction is unchanged
 
-```text
-notification row = successfully created
-push = failed
-```
+E. Reciprocal approval
+- A -> B approved
+- B -> A does not exist/approve automatically
+- B separately requests A
+- B -> A pending
+- A approves
+- both directions are now approved
 
-The user still sees the Activity notification when they open Recommendly.
+F. Pending lists
+- pending_in returns the correct incoming request
+- pending_out returns the correct outgoing request
 
----
+G. RLS/security
+- ordinary authenticated users still cannot arbitrarily create notifications addressed to another user
+- the trusted server-side path can create the legitimate notification
+- do not turn this into a broad notification INSERT permission
 
-# 9. Delivery to multiple devices
+If an existing pgTAP test intentionally expects a cross-user notification INSERT to fail, preserve that security assertion. Use the appropriate pgTAP assertion mechanism so the expected failure does not abort the entire test file.
 
-If a user has:
+==================================================
+7. TEST EDITING RULE
+==================================================
 
-```text
-Chrome desktop
-Chrome laptop
-Android PWA
-```
+The previous attempt became unstable because SQL files were repeatedly manipulated through PowerShell string replacements.
 
-all valid subscriptions should receive the event.
+Do NOT repeat that workflow.
 
-The dispatcher should:
+If an SQL test needs modification:
 
-1. load all subscriptions for the recipient
-2. construct the notification payload
-3. send to each subscription
-4. identify invalid/expired subscriptions
-5. remove invalid subscriptions
-6. log useful failures without exposing sensitive notification content
+1. restore/verify the original file;
+2. make one deterministic, minimal edit;
+3. inspect the entire resulting diff;
+4. verify SQL syntax/structure;
+5. run the targeted DB test;
+6. only then proceed.
 
-A failure for one device must not prevent delivery to the others.
+If an edit attempt fails or produces unexpected structure:
+- STOP;
+- restore the file from Git;
+- use a different deterministic editing approach.
 
----
+Do not stack transformations on top of a malformed file.
 
-# 10. Notification content
+Do not modify `plan(N)` unless the final number of assertions has actually been counted.
 
-Push notifications should be concise and consistent with the existing Activity event.
+==================================================
+8. TEST EXECUTION
+==================================================
 
-Examples:
-
-```text
-YOU'D LIKE
-Alice asked to connect with you.
-```
-
-```text
-YOU'D LIKE
-Alice approved your connection request.
-```
-
-```text
-YOU'D LIKE
-Alice declined your connection request.
-```
-
-```text
-YOU'D LIKE
-Alice removed your access.
-```
-
-The server should construct the appropriate display content.
-
-Do not put unnecessary private recommendation data into push payloads.
-
-The payload should contain only what is necessary for:
-
-- displaying the notification
-- identifying the notification
-- handling the click
-- maintaining the badge state if required
-
----
-
-# 11. Service worker
-
-Implement the minimum service-worker functionality required for background push.
-
-It must:
-
-### Receive push
-
-When a push arrives while the app is closed:
-
-- display an OS/browser notification
-- update the app badge where supported
-
-### Handle notification click
-
-On click:
-
-```text
-notification click
-       ↓
-open/focus Recommendly
-       ↓
-/notifications
-```
-
-If an existing Recommendly window exists, prefer focusing/navigating it rather than opening unnecessary duplicate windows.
-
-V1 does **not** need deep linking to a specific notification.
-
----
-
-# 12. Badge behaviour
-
-We should distinguish three things.
-
-### Activity navigation
-
-Leave the current Recommendly Activity indicator alone.
-
-**Do not redesign the navigation.**
-
-### Browser tab
-
-While Recommendly is open, dynamically update the favicon/tab indicator to show that there are unread Activity notifications.
-
-If the browser/tab does not exist, this mechanism obviously cannot operate.
-
-### Installed PWA
-
-When a push arrives while the PWA is closed, use the supported Badging API/service-worker mechanism to show an app icon badge.
-
-The badge represents unread Activity.
-
-When the user eventually reads all notifications, clear the badge.
-
-If a platform doesn't support app badging, the push notification itself remains the fallback.
-
----
-
-# 13. Badge source of truth
-
-`notifications.read_at` remains authoritative.
-
-Do **not** introduce a separate "badge read state."
-
-The lifecycle is:
-
-```text
-notification created
-       ↓
-unread
-       ↓
-push delivered
-       ↓
-still unread
-       ↓
-user opens Activity
-       ↓
-read_at populated
-       ↓
-badge cleared
-```
-
-Dismissing the OS notification must **not** mark the Activity notification as read.
-
-That is important.
-
----
-
-# 14. Exact unread count vs indicator
-
-For V1:
-
-- Recommendly's existing Activity indicator remains unchanged.
-- The external app badge should preferably represent unread Activity.
-- Where a numeric badge is supported reliably, use the unread count.
-- Where only a generic badge is supported, use an indicator.
-
-The implementation should not make the feature dependent on numeric badge support.
-
----
-
-# 15. Permission UX
-
-Do **not** immediately request notification permission on every page load.
-
-There should be an explicit user-driven mechanism for enabling notifications.
-
-For example, an appropriate place could be Settings or Activity.
-
-The exact UX should fit the existing Recommendly design rather than introducing a large notification-settings system.
-
-V1 does **not** need per-event notification preferences.
-
-If permission is denied:
-
-```text
-No error state
-No repeated nagging
-No broken Activity
-No email changes
-```
-
-Recommendly continues normally.
-
----
-
-# 16. Login/logout/account switching
-
-This needs explicit handling.
-
-On login:
-
-```text
-authenticated user
-       ↓
-register current push subscription
-```
-
-On logout:
-
-```text
-remove/disassociate current subscription
-       ↓
-logout
-```
-
-This prevents:
-
-```text
-Account A
-   ↓
-browser subscription
-   ↓
-logout
-   ↓
-Account B
-```
-
-from accidentally receiving Account A's future notifications.
-
----
-
-# 17. Native-app compatibility
-
-This is an architectural acceptance criterion.
-
-Do **not** name the core model `web_push_notification`.
-
-Use concepts such as:
-
-```text
-notification
-delivery
-subscription
-channel
-```
-
-The V1 implementation should be Web Push-specific only at the delivery layer.
-
-Later:
-
-```text
-                    notification
-                         │
-             ┌───────────┼───────────┐
-             ▼           ▼           ▼
-          Web Push     APNs         FCM
-             │           │           │
-           PWA         iOS       Android
-```
-
-The Activity UI and notification event creation should not need redesign when native apps are introduced.
-
----
-
-# 18. Security requirements
-
-The implementation must follow the existing Recommendly authorization model.
-
-Particularly:
-
-- RLS on push subscription data.
-- No client-supplied recipient authority.
-- No service-role shortcut in the browser.
-- Private VAPID key server-side only.
-- Push payloads contain only recipient-appropriate information.
-- No leakage of private recommendations.
-- Invalid subscriptions cleaned up.
-- Notification ownership remains governed by existing notification policies.
-- Push delivery must never create a new authorization path.
-
-The push system is a **delivery mechanism**, not an authorization mechanism.
-
----
-
-# 19. Testing
-
-Codex must add/modify automated tests for:
-
-### Database
-
-- push subscription RLS
-- user cannot read another user's subscription
-- user cannot modify another user's subscription
-- duplicate endpoint handling
-- authenticated ownership
-
-### API
-
-- registration
-- upsert
-- removal
-- unauthenticated rejection
-- account ownership
-
-### Notification dispatch
-
-Test all four notification types.
-
-Verify:
-
-```text
-notification type
-→ correct push title/body
-→ correct recipient
-```
-
-Test multiple subscriptions.
-
-Test invalid subscription cleanup.
-
-### Email regression
-
-Explicitly test that the existing email behaviour remains unchanged.
+Run the appropriate tests after implementation.
 
 At minimum:
 
-```text
-subscription_request
-    → Activity notification
-    → email according to email_contact_requests
-    → push according to push availability
-```
+- targeted unit tests
+- DB tests
+- web TypeScript/typecheck if applicable
+- formatting checks
 
-and:
+Use the project-local Supabase CLI / pnpm workflow.
 
-```text
-subscription_approved/rejected/revoked
-    → Activity notification
-    → existing email behaviour unchanged
-    → push
-```
+Do not require a globally installed Supabase CLI.
 
-### Web client
+If `supabase test db` fails with only:
 
-Test:
+"error running container: exit 1"
 
-- permission granted
-- permission denied
-- registration
-- unregister
-- unread state
-- badge synchronisation
-- notification click behaviour where practical
+do NOT immediately modify SQL.
 
----
+First determine whether the failure is:
+- Docker/container/environment failure
+or
+- actual SQL/pgTAP failure.
 
-# 20. Manual acceptance testing
+Capture the underlying debug/error output.
 
-Codex should provide a concise manual test checklist.
+Classify failures as:
+1. environment/tooling failure
+2. known pre-existing baseline failure
+3. regression introduced by this branch
 
-At minimum:
+Do not hide or redefine baseline failures as successes.
 
-### Desktop Chrome
+==================================================
+9. PRODUCTION SAFETY
+==================================================
 
-1. Login.
-2. Enable browser notifications.
-3. Close Recommendly tab.
-4. From another account, trigger a connection request.
-5. Verify notification appears.
-6. Click notification.
-7. Verify Recommendly opens at `/notifications`.
-8. Verify notification remains/gets marked read according to Activity behaviour.
-9. Verify unread indicator clears.
+This branch must not deploy or modify production.
 
-### Android PWA
+Do NOT:
+- manually change production database state;
+- change production RLS directly;
+- deploy Edge Functions;
+- deploy Vercel;
+- alter production secrets;
+- alter production Vault values.
 
-1. Install Recommendly to Home Screen.
-2. Enable notifications.
-3. Close the PWA.
-4. Trigger a notification from another account.
-5. Verify:
-   - OS notification
-   - app icon badge
-6. Tap notification.
-7. Verify Activity opens.
-8. Verify badge clears once unread notifications are actually read.
+Only prepare code/migrations/tests in Git.
 
-### Multiple devices
+Production deployment happens separately after review.
 
-Register two browsers/devices for the same account.
+==================================================
+10. GIT WORKFLOW
+==================================================
 
-Trigger one notification.
+Respect the repository Git workflow.
 
-Verify both receive it.
+Before changes:
+- inspect git status;
+- remain on fix-subscription-notifications;
+- do not switch branches;
+- do not stash unless absolutely necessary.
 
-### Permission denied
+During work:
+- make coherent changes;
+- inspect `git diff`;
+- inspect `git diff --check`;
+- run tests.
 
-Deny permission.
+Before committing:
+- confirm only intended files changed;
+- confirm no generated/temp files;
+- confirm no secrets;
+- confirm tests/results.
 
-Verify Recommendly continues operating normally and Activity still works.
+Then create a normal Git commit on this branch.
 
-### Email
+Push the branch to origin.
 
-Verify the existing email preference continues working independently.
+Do NOT merge into main.
+Do NOT deploy production.
 
----
+==================================================
+11. FINAL REPORT
+==================================================
 
-# 21. Git/deployment requirements
+At the end report:
 
-This must follow the existing `AGENTS.md` rules.
+1. Root cause of the notification bug.
+2. How trusted notification creation was implemented.
+3. How outgoing pending requests were fixed.
+4. Confirmation that access remains directional.
+5. Confirmation that one approval does NOT automatically approve the reverse direction.
+6. Confirmation that reciprocal access requires two independent approvals.
+7. Tests added/changed.
+8. Exact test results.
+9. Any pre-existing failures separately identified.
+10. Commit hash.
+11. Branch pushed.
+12. Explicit confirmation that production was NOT modified/deployed.
 
-Codex must:
-
-1. Start from clean/known Git state.
-2. Create a feature branch.
-3. Inspect existing code before modifying.
-4. Make schema changes through a migration.
-5. Do not directly edit production Supabase schema.
-6. Do not directly edit production Vercel configuration as a shortcut.
-7. Do not introduce a "patch" workflow outside normal Git changes.
-8. Run the appropriate test scripts.
-9. Inspect `git diff`.
-10. Commit changes with a meaningful commit.
-11. Push the feature branch.
-12. Report exactly what was tested.
-13. Do not claim deployment succeeded unless it actually did.
-14. Follow the project's established deployment/migration process.
-
-In particular, **Supabase production must remain a consequence of the Git/migration workflow, not a second source of truth.**
-
----
-
-# 22. Documentation
-
-Update the appropriate project documentation to reflect:
-
-- push notifications
-- subscription storage
-- delivery architecture
-- permission behaviour
-- Chrome/PWA support
-- email separation
-- future native delivery architecture
-- testing/acceptance criteria
-
-Do not create contradictory documentation that says notifications are email-only.
-
----
-
-# 23. Definition of done
-
-I would consider this feature complete only when all of these are true:
-
-- [ ] Existing Activity notifications still work.
-- [ ] Existing email notifications still work exactly as before.
-- [ ] Push subscription can be registered securely.
-- [ ] Multiple devices are supported.
-- [ ] Push works when Recommendly is closed.
-- [ ] Chrome desktop push works.
-- [ ] Installed Android PWA push works.
-- [ ] Android PWA badge works where supported.
-- [ ] Browser-tab indicator works while app is open.
-- [ ] Notification click opens Activity.
-- [ ] Push dismissal does not mark Activity read.
-- [ ] Reading Activity clears the unread/badge state.
-- [ ] Permission denial is graceful.
-- [ ] Invalid subscriptions are cleaned up.
-- [ ] Account switching cannot leak notifications.
-- [ ] RLS/security tests pass.
-- [ ] Email regression tests pass.
-- [ ] Push tests pass.
-- [ ] Existing project tests pass.
-- [ ] Migration is in Git.
-- [ ] No production-only schema/code changes were made outside Git.
-- [ ] Feature branch is committed and pushed.
-- [ ] Documentation is updated.
-- [ ] Architecture remains suitable for future native iOS/Android push.
+If any requirement is ambiguous, STOP and explain the ambiguity rather than inventing behavior.
