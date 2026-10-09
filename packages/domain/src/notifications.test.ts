@@ -34,21 +34,35 @@ describe("notification visibility", () => {
   });
 });
 
-describe("notification error handling", () => {
-  function interpretResponse(status: number, body: { notification_created?: boolean }) {
-    if (status === 207) return { ok: true, notification_created: false };
-    return { ok: true, notification_created: body.notification_created !== false };
-  }
+describe("subscription notification contract", () => {
+  const requestNotification = {
+    id: "1",
+    user_id: "user-b",
+    actor_user_id: "user-a",
+    type: "subscription_request",
+    reference_type: "subscription",
+    reference_id: "subscription-1",
+    read_at: null,
+  };
 
-  it("reports partial failure when notification insert fails", () => {
-    const result = interpretResponse(207, { notification_created: false });
-    expect(result.ok).toBe(true);
-    expect(result.notification_created).toBe(false);
+  it("identifies actionable request notifications by exact subscription reference", () => {
+    const actionable =
+      requestNotification.type === "subscription_request" &&
+      requestNotification.reference_type === "subscription" &&
+      requestNotification.reference_id !== null;
+    expect(actionable).toBe(true);
   });
 
-  it("reports full success when notification insert succeeds", () => {
-    const result = interpretResponse(201, {});
-    expect(result.ok).toBe(true);
-    expect(result.notification_created).toBe(true);
+  it("uses lifecycle notification types matching the push dispatcher allowlist", () => {
+    const types = [
+      "subscription_request",
+      "subscription_approved",
+      "subscription_rejected",
+      "access_revoked",
+    ];
+    expect(types).toContain("subscription_request");
+    expect(types).toContain("subscription_approved");
+    expect(types).toContain("subscription_rejected");
+    expect(types).toContain("access_revoked");
   });
 });

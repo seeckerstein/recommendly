@@ -430,19 +430,6 @@ Deno.serve(async (request) => {
       return json({ error: msg }, status);
     }
 
-    // Insert notification for the publisher
-    const { error: notifError } = await client.from("notifications").insert({
-      user_id: publisherId,
-      type: "subscription_request",
-      actor_user_id: user.id,
-      reference_type: "subscription",
-      reference_id: data.id,
-    });
-    if (notifError) {
-      console.error("notification insert failed:", notifError.message);
-      return json({ data, notification_created: false }, 207);
-    }
-
     await sendContactRequestEmail(publisherId, user.id);
     return json({ data }, 201);
   }
@@ -465,22 +452,6 @@ Deno.serve(async (request) => {
 
     const { data, error } = await client.rpc("transition_subscription", { subscription_id: subId, next_status: nextStatus });
     if (error) return json({ error: error.message }, 400);
-
-    // Insert notification for the subscriber (the other party)
-    const actorId = nextStatus === "REVOKED" ? user.id : data.publisher_id;
-    const notifyUserId = nextStatus === "REVOKED" ? data.publisher_id : data.subscriber_id;
-    const notifType = nextStatus === "APPROVED" ? "subscription_approved" : nextStatus === "REJECTED" ? "subscription_rejected" : "access_revoked";
-    const { error: notifError } = await client.from("notifications").insert({
-      user_id: notifyUserId,
-      type: notifType,
-      actor_user_id: user.id,
-      reference_type: "subscription",
-      reference_id: data.id,
-    });
-    if (notifError) {
-      console.error("notification insert failed:", notifError.message);
-      return json({ data, notification_created: false }, 207);
-    }
     return json({ data }, 200);
   }
 

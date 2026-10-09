@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap;
-select plan(10);
+select plan(11);
 
 insert into auth.users (id, aud, role, email) values
   ('00000000-0000-0000-0000-000000000001', 'authenticated', 'authenticated', 'owner@example.test'),
@@ -85,10 +85,14 @@ select is(
 -- ============================================================
 -- SECTION 2: NOTIFICATION TRIGGER
 -- ============================================================
+insert into auth.users (id, aud, role, email) values ('00000000-0000-0000-0000-000000000004', 'authenticated', 'authenticated', 'publisher@example.test');
+insert into public.profiles (id, display_name) values ('00000000-0000-0000-0000-000000000004', 'Publisher');
 set local role authenticated;
 select pg_temp._as('00000000-0000-0000-0000-000000000001');
-insert into public.notifications (user_id, type, actor_user_id, reference_type, reference_id)
-  values ('00000000-0000-0000-0000-000000000002', 'subscription_request', '00000000-0000-0000-0000-000000000001', 'subscription', null);
+select lives_ok(
+  $$select public.request_subscription('00000000-0000-0000-0000-000000000004')$$,
+  '[push-dispatch] subscription request succeeds'
+);
 reset role;
 select is(
   (select count(*) from public.notifications where type = 'subscription_request'),
@@ -96,7 +100,7 @@ select is(
   '[push-dispatch] notification insert succeeds even without push dispatcher configured'
 );
 select is(
-  (select count(*) from public.notifications where user_id = '00000000-0000-0000-0000-000000000002'),
+  (select count(*) from public.notifications where user_id = '00000000-0000-0000-0000-000000000004'),
   1::bigint,
   '[push-dispatch] existing email/activity behaviour untouched'
 );
