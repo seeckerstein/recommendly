@@ -456,6 +456,21 @@ Deno.serve(async (request) => {
   }
 
   // ---------------------------------------------------------------------------
+  // Cancel pending request: DELETE /v1/subscriptions/:id/cancel
+  // ---------------------------------------------------------------------------
+  const cancelMatch = url.pathname.match(/\/v1\/subscriptions\/([0-9a-f-]+)\/cancel$/);
+  if (request.method === "DELETE" && cancelMatch) {
+    const { data: { user } } = await getAuthUser(client, authorization);
+    if (!user) return json({ error: "Invalid authentication token" }, 401);
+
+    const { data, error } = await client.rpc("cancel_subscription_request", {
+      p_subscription_id: cancelMatch[1],
+    });
+    if (error) return json({ error: error.message }, 400);
+    return json({ data }, 200);
+  }
+
+  // ---------------------------------------------------------------------------
   // Unsubscribe: DELETE /v1/subscriptions/:publisherId
   // ---------------------------------------------------------------------------
   const unsubMatch = url.pathname.match(/\/v1\/subscriptions\/([0-9a-f-]+)\/unsubscribe$/);

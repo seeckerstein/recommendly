@@ -13,7 +13,7 @@ This repository intentionally starts with the Supabase backend foundation. The m
 3. Run `pnpm install`, then `pnpm supabase:start`.
 4. Apply the migration with `supabase db reset` and run `pnpm test:db`.
 
-Never connect development MCP tooling to production. Commit every schema change as a migration.
+**Supabase production target:** the only hosted Recommendly project is `recommendly-dev` (`zpjsmuuxgcewmymmdddr`), confirmed by the owner as the production project; there is no separate production project. The dashboard shows the `PRODUCTION` environment badge even though the project name includes `-dev`. Keep local development and DB tests on the local Supabase stack; do not point disposable development tooling or destructive reset commands at the hosted project. Commit every schema change as a migration and verify migration history before any explicitly authorized production deployment.
 
 ## Push notifications
 

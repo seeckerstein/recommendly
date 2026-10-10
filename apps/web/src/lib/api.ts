@@ -228,6 +228,16 @@ export async function transitionSubscription(subscriptionId: string, status: "AP
     throw new Error(err.error ?? `Failed (${res.status})`);
   }
 }
+export async function cancelSubscriptionRequest(subscriptionId: string): Promise<void> {
+  const res = await fetch(apiUrl(`/v1/subscriptions/${subscriptionId}/cancel`), {
+    method: "DELETE",
+    headers: await getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error ?? `Failed to cancel request (${res.status})`);
+  }
+}
 export async function unsubscribeFrom(publisherId: string): Promise<void> {
   const res = await fetch(apiUrl(`/v1/subscriptions/${publisherId}/unsubscribe`), {
     method: "DELETE",

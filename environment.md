@@ -1,6 +1,6 @@
 # Recommendly Development Environment
 
-Last verified: 2026-10-09
+Last verified: 2026-10-10
 
 This document records the verified development environment and the rules needed to keep Codex, Git, Supabase, Vercel, and the Recommendly repository working as one reproducible chain.
 
@@ -59,9 +59,11 @@ Verified working:
 
 ### Supabase
 - CLI authenticated.
-- `recommendly-dev` is visible and healthy.
-- Project ref: `zpjsmuuxgcewmymmdddr`.
-- Local development must remain separate from production.
+- **The only Supabase project for Recommendly is `recommendly-dev` (`zpjsmuuxgcewmymmdddr`), and the owner has explicitly confirmed that this is also the intended production project. There is no separate production project.**
+- Supabase dashboard showed the project as Healthy and displayed a `PRODUCTION` environment badge for the selected `main` branch. The project name remains `recommendly-dev`; do not infer that a separate production project exists.
+- Project URL: `https://zpjsmuuxgcewmymmdddr.supabase.co`.
+- **Production target confirmed by owner:** use ref `zpjsmuuxgcewmymmdddr` when performing explicitly approved production migration verification/deployment.
+- Keep local development isolated: use the local Supabase stack for resets and DB tests. Do not treat the hosted production project as a disposable development target or run destructive local-reset workflows against it.
 
 Never put access tokens, service-role keys, passwords, or secrets into Git, prompts, logs, or documentation.
 
@@ -186,14 +188,13 @@ Do not:
 
 ## 9. Production safety
 
-Development tooling must never be connected to production accidentally.
+Recommendly currently has one hosted Supabase project, `recommendly-dev` (`zpjsmuuxgcewmymmdddr`), and the owner has explicitly confirmed it is the production project; there is no separate production Supabase project. The dashboard's `PRODUCTION` badge refers to the selected production environment/branch, even though the project name includes `-dev`.
 
 Before any stateful remote action, explicitly identify the target:
-- local
-- development/staging
-- production
+- local Supabase stack for development/tests
+- hosted production Supabase project: `zpjsmuuxgcewmymmdddr`
 
-Production deployment is an explicit action, not a side effect of testing.
+Production deployment is an explicit action, not a side effect of testing. Verify migration history first, ensure migration files are committed and reviewed/merged according to the Git workflow, and deploy only when explicitly authorized. Never run destructive local-reset workflows against the hosted production project.
 
 No direct production SQL. No dashboard-only schema changes. No uncommitted migration deployment.
 
