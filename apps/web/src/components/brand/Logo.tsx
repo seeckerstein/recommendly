@@ -55,7 +55,9 @@ export function Logo({ className, href = "/", size = "md" }: LogoProps) {
       className={`inline-flex items-center gap-2 leading-none text-ink ${className ?? ""}`}
     >
       <LogoMark size={sizes[size].icon} />
-      <span className={`display ${sizes[size].text} tracking-[-0.02em]`}>YOU'D LIKE</span>
+      <span className={`display ${sizes[size].text} tracking-[-0.02em]`}>
+        YOU'D LIKE
+      </span>
     </Link>
   );
 }

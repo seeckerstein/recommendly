@@ -2,7 +2,11 @@
 // Uses webpush-webcrypto, a Web Crypto based implementation of RFC 8291
 // (aes128gcm encryption) and RFC 8292 (VAPID), compatible with Deno.
 
-import { ApplicationServerKeys, generatePushHTTPRequest, setWebCrypto } from "https://esm.sh/webpush-webcrypto@1.0.5";
+import {
+  ApplicationServerKeys,
+  generatePushHTTPRequest,
+  setWebCrypto,
+} from "https://esm.sh/webpush-webcrypto@1.0.5";
 import { buildNotificationPayload, type PushPayload } from "./push-payload.ts";
 
 export { buildNotificationPayload };
@@ -46,11 +50,15 @@ function bytesToBase64Url(bytes: Uint8Array): string {
   return btoa(binary).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
 
-async function getApplicationServerKeys(vapid: VapidOptions): Promise<ApplicationServerKeys> {
+async function getApplicationServerKeys(
+  vapid: VapidOptions,
+): Promise<ApplicationServerKeys> {
   if (applicationServerKeys) return applicationServerKeys;
   const publicKeyBytes = base64UrlToBytes(vapid.publicKey);
   if (publicKeyBytes.length !== 65 || publicKeyBytes[0] !== 0x04) {
-    throw new Error("Unexpected VAPID public key format; expected uncompressed P-256 point");
+    throw new Error(
+      "Unexpected VAPID public key format; expected uncompressed P-256 point",
+    );
   }
 
   const jwk = {
@@ -106,8 +114,14 @@ export async function sendPushNotification(
     body: request.body,
   });
 
-  if (response.status === 201 || response.status === 200) return { ok: true, expired: false };
-  if (response.status === 404 || response.status === 410) return { ok: false, expired: true };
-  console.error("push delivery failed:", response.status, await response.text().catch(() => ""));
+  if (response.status === 201 || response.status === 200)
+    return { ok: true, expired: false };
+  if (response.status === 404 || response.status === 410)
+    return { ok: false, expired: true };
+  console.error(
+    "push delivery failed:",
+    response.status,
+    await response.text().catch(() => ""),
+  );
   return { ok: false, expired: false };
 }

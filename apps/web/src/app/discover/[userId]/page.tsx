@@ -7,7 +7,12 @@ import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { RecommendationCard } from "@/components/ui/RecommendationCard";
 import { fetchDiscoverRecommendations, type Recommendation } from "@/lib/api";
-import { getUserProfile, requestSubscription, unsubscribeFrom, type UserProfile } from "@/lib/api";
+import {
+  getUserProfile,
+  requestSubscription,
+  unsubscribeFrom,
+  type UserProfile,
+} from "@/lib/api";
 
 const relationshipLabels: Record<string, string> = {
   SELF: "This is you",
@@ -18,7 +23,11 @@ const relationshipLabels: Record<string, string> = {
   REVOKED: "Access removed",
 };
 
-export default function UserProfilePage({ params }: { params: Promise<{ userId: string }> }) {
+export default function UserProfilePage({
+  params,
+}: {
+  params: Promise<{ userId: string }>;
+}) {
   const { userId } = use(params);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,11 +39,17 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
   const [recsLoading, setRecsLoading] = useState(true);
 
   useEffect(() => {
-    getUserProfile(userId).then(setProfile).catch((e) => setError(e.message)).finally(() => setLoading(false));
+    getUserProfile(userId)
+      .then(setProfile)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
   }, [userId]);
 
   useEffect(() => {
-    fetchDiscoverRecommendations(userId).then(setRecs).catch(() => setRecs([])).finally(() => setRecsLoading(false));
+    fetchDiscoverRecommendations(userId)
+      .then(setRecs)
+      .catch(() => setRecs([]))
+      .finally(() => setRecsLoading(false));
   }, [userId]);
 
   async function handleAction(action: "request" | "unsubscribe") {
@@ -60,10 +75,24 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
   }
 
   if (loading) {
-    return <AppShell><Page><p className="mt-8 text-sm text-neutral-500">Loading…</p></Page></AppShell>;
+    return (
+      <AppShell>
+        <Page>
+          <p className="mt-8 text-sm text-neutral-500">Loading…</p>
+        </Page>
+      </AppShell>
+    );
   }
   if (error || !profile) {
-    return <AppShell><Page><p className="mt-8 text-sm text-red-600">{error ?? "User not found."}</p></Page></AppShell>;
+    return (
+      <AppShell>
+        <Page>
+          <p className="mt-8 text-sm text-red-600">
+            {error ?? "User not found."}
+          </p>
+        </Page>
+      </AppShell>
+    );
   }
 
   const rel = profile.relationship;
@@ -78,42 +107,77 @@ export default function UserProfilePage({ params }: { params: Promise<{ userId: 
             <p className="text-sm text-neutral-500">{profile.email}</p>
           </div>
         </div>
-        {profile.bio && <p className="mt-4 max-w-lg text-sm text-neutral-600">{profile.bio}</p>}
-        {relationshipLabels[rel] && <p className="mt-2 text-sm font-medium text-neutral-700">{relationshipLabels[rel]}</p>}
+        {profile.bio && (
+          <p className="mt-4 max-w-lg text-sm text-neutral-600">
+            {profile.bio}
+          </p>
+        )}
+        {relationshipLabels[rel] && (
+          <p className="mt-2 text-sm font-medium text-neutral-700">
+            {relationshipLabels[rel]}
+          </p>
+        )}
 
         <div className="mt-6 max-w-md">
-          {actionError && <p className="mb-3 text-sm text-red-600">{actionError}</p>}
+          {actionError && (
+            <p className="mb-3 text-sm text-red-600">{actionError}</p>
+          )}
           {notice && <p className="mb-3 text-sm text-emerald-700">{notice}</p>}
           {rel === "NOT_CONNECTED" && (
-            <Button onClick={() => handleAction("request")} disabled={actionLoading} variant="accent">
+            <Button
+              onClick={() => handleAction("request")}
+              disabled={actionLoading}
+              variant="accent"
+            >
               {actionLoading ? "Sending…" : "Request access"}
             </Button>
           )}
-          {rel === "PENDING" && (
-            <Button disabled>Request pending</Button>
-          )}
+          {rel === "PENDING" && <Button disabled>Request pending</Button>}
           {rel === "APPROVED" && (
-            <Button onClick={() => handleAction("unsubscribe")} disabled={actionLoading} variant="ghost">
+            <Button
+              onClick={() => handleAction("unsubscribe")}
+              disabled={actionLoading}
+              variant="ghost"
+            >
               {actionLoading ? "…" : "Unsubscribe"}
             </Button>
           )}
           {rel === "REJECTED" && <Button disabled>Request declined</Button>}
           {rel === "REVOKED" && (
-            <Button onClick={() => handleAction("request")} disabled={actionLoading} variant="accent">
+            <Button
+              onClick={() => handleAction("request")}
+              disabled={actionLoading}
+              variant="accent"
+            >
               {actionLoading ? "Sending…" : "Request access again"}
             </Button>
           )}
         </div>
 
         <div className="mt-8">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-400">Recommendations</h2>
-          {recsLoading && <p className="mt-4 text-sm text-neutral-500">Loading recommendations…</p>}
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-400">
+            Recommendations
+          </h2>
+          {recsLoading && (
+            <p className="mt-4 text-sm text-neutral-500">
+              Loading recommendations…
+            </p>
+          )}
           {!recsLoading && recs && recs.length === 0 && (
-            <p className="mt-4 text-sm text-neutral-500">No recommendations visible from this person yet.</p>
+            <p className="mt-4 text-sm text-neutral-500">
+              No recommendations visible from this person yet.
+            </p>
           )}
           {recs?.map((r) => (
             <div key={r.id} className="mt-4">
-              <RecommendationCard recommendation={r} owner={{ id: r.owner_id, name: r.owner_name, email: r.owner_email }} />
+              <RecommendationCard
+                recommendation={r}
+                owner={{
+                  id: r.owner_id,
+                  name: r.owner_name,
+                  email: r.owner_email,
+                }}
+              />
             </div>
           ))}
         </div>

@@ -69,7 +69,11 @@ export default function SignupPage() {
           />
         </Field>
 
-        <Field htmlFor="password" label="Password" hint="At least 8 characters.">
+        <Field
+          htmlFor="password"
+          label="Password"
+          hint="At least 8 characters."
+        >
           <Input
             id="password"
             type="password"
@@ -92,11 +96,16 @@ export default function SignupPage() {
           </p>
         )}
 
-        <Button type="submit" variant="accent" size="lg" disabled={loading} className="w-full">
+        <Button
+          type="submit"
+          variant="accent"
+          size="lg"
+          disabled={loading}
+          className="w-full"
+        >
           {loading ? "Creating account…" : "Create account"}
         </Button>
-</form>
-
+      </form>
       <div className="mt-6 space-y-2">
         {["google"].map((provider) => (
           <button
@@ -123,6 +132,7 @@ export default function SignupPage() {
             Continue with {provider === "google" ? "Google" : "Apple"}
           </button>
         ))}
-      </div>    </AuthShell>
+      </div>{" "}
+    </AuthShell>
   );
 }

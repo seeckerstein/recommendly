@@ -119,7 +119,9 @@ function NewRecommendationForm() {
         </PageTitle>
 
         {loadingEdit ? (
-          <p className="mt-10 text-sm text-ink-faint">Loading recommendation…</p>
+          <p className="mt-10 text-sm text-ink-faint">
+            Loading recommendation…
+          </p>
         ) : (
           <form onSubmit={handleSubmit} className="mt-10 space-y-10">
             <fieldset className="space-y-3">
@@ -173,7 +175,11 @@ function NewRecommendationForm() {
 
               <Field htmlFor="rating" label="Rating" optional>
                 <div id="rating">
-                  <RatingInput name="rating" value={rating} onChange={setRating} />
+                  <RatingInput
+                    name="rating"
+                    value={rating}
+                    onChange={setRating}
+                  />
                 </div>
               </Field>
             </div>
@@ -183,12 +189,19 @@ function NewRecommendationForm() {
                 <SectionHeading hint="all optional">Details</SectionHeading>
                 <div className="grid gap-5 sm:grid-cols-2">
                   {extras.map(({ key, label, placeholder }) => (
-                    <Field key={key} htmlFor={`meta-${key}`} label={label} optional>
+                    <Field
+                      key={key}
+                      htmlFor={`meta-${key}`}
+                      label={label}
+                      optional
+                    >
                       <Input
                         id={`meta-${key}`}
                         value={metadata[key] ?? ""}
                         placeholder={placeholder}
-                        onChange={(e) => setMetadata({ ...metadata, [key]: e.target.value })}
+                        onChange={(e) =>
+                          setMetadata({ ...metadata, [key]: e.target.value })
+                        }
                       />
                     </Field>
                   ))}
@@ -218,7 +231,11 @@ function NewRecommendationForm() {
                 size="lg"
                 disabled={saving || !title.trim()}
               >
-                {saving ? "Saving…" : editId ? "Save changes" : "Add to my shelf"}
+                {saving
+                  ? "Saving…"
+                  : editId
+                    ? "Save changes"
+                    : "Add to my shelf"}
               </Button>
               <ButtonLink href="/mine" variant="ghost" size="lg">
                 Cancel
@@ -233,7 +250,9 @@ function NewRecommendationForm() {
 
 export default function NewRecommendationPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-sm text-ink-faint">Loading…</div>}>
+    <Suspense
+      fallback={<div className="p-8 text-sm text-ink-faint">Loading…</div>}
+    >
       <NewRecommendationForm />
     </Suspense>
   );

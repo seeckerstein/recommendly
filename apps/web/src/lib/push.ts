@@ -12,7 +12,11 @@ export interface PushPermissionState {
 }
 
 export function pushPermissionState(): PushPermissionState {
-  if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window)) {
+  if (
+    typeof window === "undefined" ||
+    !("serviceWorker" in navigator) ||
+    !("PushManager" in window)
+  ) {
     return { supported: false, permission: "unsupported" };
   }
   return { supported: true, permission: Notification.permission };
@@ -24,7 +28,10 @@ export async function getExistingSubscription(): Promise<PushSubscription | null
   return (await registration?.pushManager.getSubscription()) ?? null;
 }
 
-export async function enablePushNotifications(): Promise<{ ok: boolean; reason?: string }> {
+export async function enablePushNotifications(): Promise<{
+  ok: boolean;
+  reason?: string;
+}> {
   const state = pushPermissionState();
   if (!state.supported) return { ok: false, reason: "unsupported" };
   if (!VAPID_PUBLIC_KEY) return { ok: false, reason: "server-not-configured" };
@@ -32,7 +39,8 @@ export async function enablePushNotifications(): Promise<{ ok: boolean; reason?:
   const permission = await Notification.requestPermission();
   if (permission !== "granted") return { ok: false, reason: permission };
 
-  const registration = await navigator.serviceWorker.register(SERVICE_WORKER_PATH);
+  const registration =
+    await navigator.serviceWorker.register(SERVICE_WORKER_PATH);
   const existing = await registration.pushManager.getSubscription();
   const subscription =
     existing ??
@@ -51,7 +59,12 @@ export async function enablePushNotifications(): Promise<{ ok: boolean; reason?:
   }
 
   try {
-    await registerPushSubscription({ endpoint, p256dh, auth, user_agent: navigator.userAgent });
+    await registerPushSubscription({
+      endpoint,
+      p256dh,
+      auth,
+      user_agent: navigator.userAgent,
+    });
     return { ok: true };
   } catch {
     await subscription.unsubscribe().catch(() => {});

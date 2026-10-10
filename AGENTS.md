@@ -19,6 +19,7 @@ Historical task/checkpoint files are not authoritative. Do not resurrect complet
 Read `environment.md` before diagnosing tooling, versions, credentials, deployment access, or local Supabase/Docker issues.
 
 The verified Windows development environment uses:
+
 - Node 26.8.1
 - npm 11.19.0
 - Git 2.56.0.windows.2
@@ -33,6 +34,7 @@ Recommendly intentionally uses its project-pinned pnpm 11.19.0 and project-local
 On Windows/Codex, do not "fix" missing tools by changing the Windows Machine PATH. The Codex configuration explicitly supplies stable tool paths; keep that configuration intact.
 
 If a command fails, first classify it as:
+
 - project/code failure,
 - repository state problem,
 - authentication/access problem, or
@@ -47,17 +49,20 @@ If the same environment problem fails twice, stop and report it. Do not loop.
 All repository changes follow normal Git flow.
 
 Before changing anything:
+
 - inspect `git status`;
 - inspect the current branch;
 - inspect relevant existing code/migrations/tests;
 - do not overwrite unrelated work.
 
 During work:
+
 - make small, deterministic edits;
 - inspect `git diff` after meaningful changes;
 - run `git diff --check`.
 
 Before commit:
+
 - only intended files may be changed;
 - no secrets, generated files, temporary files, or unrelated formatting churn;
 - tests/checks must be run and reported honestly.
@@ -75,6 +80,7 @@ Do not use giant PowerShell string replacements or whole-file rewrites for small
 Preserve existing line endings and formatting. If a small change creates a huge diff, stop and inspect it before proceeding.
 
 Never repeatedly transform a malformed file. If an edit goes wrong:
+
 1. stop;
 2. restore the affected file from Git if appropriate;
 3. make one deterministic edit;
@@ -104,6 +110,7 @@ Never weaken authorization to make a test or UI flow pass.
 Access is directional and must remain so.
 
 If A requests access to B:
+
 - A -> B is pending.
 - B approving A -> B gives A access to B.
 - B does not automatically receive access to A.
@@ -118,12 +125,14 @@ Subscription lifecycle changes and notifications must preserve the correct actor
 Use committed migrations for schema changes.
 
 Before a migration:
+
 1. inspect current schema, policies, grants, functions, indexes, and constraints;
 2. determine the real starting state;
 3. make the migration safe for that state;
 4. add regression/security coverage.
 
 After a migration:
+
 - run local database reset/application;
 - run database tests;
 - inspect the migration diff;
@@ -140,6 +149,7 @@ Do not deploy Edge Functions or modify production secrets/Vault unless the user 
 Database migrations and Edge Functions deploy independently. Applying a migration does not update the deployed function bundle; deploying a function does not apply migrations. When a change touches both, plan, authorize, and verify both deployment steps separately.
 
 For an authorized production release:
+
 - verify the checked-out source is the intended merged commit;
 - inspect migration history and dry-run before applying committed migrations with the project-local Supabase CLI and explicit production ref;
 - deploy only the changed Edge Function(s) from that verified source, also with the project-local CLI and explicit ref;
@@ -153,6 +163,7 @@ Do not infer that GitHub integration or a successful migration automatically dep
 For permission-sensitive changes, unit tests alone are insufficient.
 
 Preferred evidence:
+
 1. focused unit/domain tests;
 2. API behavior tests;
 3. DB/RLS tests;
@@ -162,6 +173,7 @@ Preferred evidence:
 A regression test should reproduce the original defect and remain in the suite.
 
 For authorization changes, include negative cases:
+
 - owner vs non-owner;
 - approved vs pending/rejected/revoked/unsubscribed;
 - anonymous where relevant;
@@ -190,6 +202,7 @@ Avoid broad UI rewrites while fixing backend/security defects.
 Production is never part of normal local development. For Recommendly, the sole hosted Supabase project is `recommendly-dev` (`zpjsmuuxgcewmymmdddr`), explicitly confirmed by the owner as production; there is no separate hosted production project. Use local Supabase for routine development and tests.
 
 Never:
+
 - manually mutate production database state;
 - weaken production RLS directly;
 - deploy a function;
@@ -204,6 +217,7 @@ When production deployment is authorized, use the repository's committed Git/mig
 ## 10. Known lessons
 
 This project has previously lost time through:
+
 - trying to fix RLS by weakening policies;
 - treating child-table privacy as an afterthought;
 - direct notification inserts that violated correct cross-user RLS;

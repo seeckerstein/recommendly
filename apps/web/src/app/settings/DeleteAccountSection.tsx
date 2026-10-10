@@ -21,7 +21,9 @@ export function DeleteAccountSection() {
       const res = await fetch("/api/account/delete", { method: "POST" });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setError(body.error ?? "Something went wrong. Your account was not deleted.");
+        setError(
+          body.error ?? "Something went wrong. Your account was not deleted.",
+        );
         setSubmitting(false);
         return;
       }
@@ -44,9 +46,13 @@ export function DeleteAccountSection() {
 
   return (
     <section className="py-6">
-      <h2 className="display text-[1.125rem] leading-snug text-ink">Delete your account</h2>
+      <h2 className="display text-[1.125rem] leading-snug text-ink">
+        Delete your account
+      </h2>
       <p className="mt-2 max-w-prose text-[15px] leading-relaxed text-ink-soft">
-        Permanently delete your YOU&#39;D LIKE account, including your profile, recommendations, comments, ratings, and connections. This cannot be undone.
+        Permanently delete your YOU&#39;D LIKE account, including your profile,
+        recommendations, comments, ratings, and connections. This cannot be
+        undone.
       </p>
 
       {!confirming ? (
@@ -58,14 +64,25 @@ export function DeleteAccountSection() {
           Delete my account
         </button>
       ) : (
-        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-4" onKeyDown={handleKeyDown}>
-          <p className="text-sm font-medium text-red-800">Delete your account?</p>
+        <div
+          className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-4"
+          onKeyDown={handleKeyDown}
+        >
+          <p className="text-sm font-medium text-red-800">
+            Delete your account?
+          </p>
           <p className="mt-1 text-[15px] leading-relaxed text-red-700">
-            This permanently deletes your YOU&#39;D LIKE account, your profile, all of your recommendations, comments, ratings, and connections. This cannot be undone.
+            This permanently deletes your YOU&#39;D LIKE account, your profile,
+            all of your recommendations, comments, ratings, and connections.
+            This cannot be undone.
           </p>
           <div className="mt-3">
-            <label htmlFor="delete-confirm" className="text-sm font-medium text-red-800">
-              Type <span className="font-mono font-semibold">DELETE</span> to confirm
+            <label
+              htmlFor="delete-confirm"
+              className="text-sm font-medium text-red-800"
+            >
+              Type <span className="font-mono font-semibold">DELETE</span> to
+              confirm
             </label>
             <input
               id="delete-confirm"

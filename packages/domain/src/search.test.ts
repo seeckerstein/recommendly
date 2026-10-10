@@ -4,7 +4,10 @@ function normalizeQuery(q: string): string {
   return q.trim().toLowerCase();
 }
 
-function matches(profile: { display_name: string; email: string }, rawQuery: string): boolean {
+function matches(
+  profile: { display_name: string; email: string },
+  rawQuery: string,
+): boolean {
   const q = normalizeQuery(rawQuery);
   return (
     profile.display_name.toLowerCase().includes(q) ||
@@ -13,7 +16,10 @@ function matches(profile: { display_name: string; email: string }, rawQuery: str
 }
 
 describe("person search normalization", () => {
-  const profile = { display_name: "Johan Eckerstein", email: "johan.eckerstein@gmail.com" };
+  const profile = {
+    display_name: "Johan Eckerstein",
+    email: "johan.eckerstein@gmail.com",
+  };
 
   it("matches exact email", () => {
     expect(matches(profile, "johan.eckerstein@gmail.com")).toBe(true);
@@ -41,7 +47,10 @@ describe("duplicate display names", () => {
   it("distinguishes people by email", () => {
     const results = [
       { display_name: "Johan Eckerstein", email: "johan.eckerstein@gmail.com" },
-      { display_name: "Johan Eckerstein", email: "johan.eckerstein@beyondadvisory.ch" },
+      {
+        display_name: "Johan Eckerstein",
+        email: "johan.eckerstein@beyondadvisory.ch",
+      },
     ];
     expect(results.filter((r) => matches(r, "Johan")).length).toBe(2);
     expect(results[0].email).not.toBe(results[1].email);
@@ -63,7 +72,14 @@ describe("result limiting", () => {
 });
 
 describe("search response privacy", () => {
-  const fields = ["id", "email", "display_name", "bio", "avatar_url", "profile_visibility"];
+  const fields = [
+    "id",
+    "email",
+    "display_name",
+    "bio",
+    "avatar_url",
+    "profile_visibility",
+  ];
 
   it("returns only intended public profile fields", () => {
     expect(fields).not.toContain("username");
@@ -72,7 +88,11 @@ describe("search response privacy", () => {
   });
 
   it("does not return auth.users internal fields", () => {
-    const forbidden = ["encrypted_password", "confirmation_token", "recovery_token"];
+    const forbidden = [
+      "encrypted_password",
+      "confirmation_token",
+      "recovery_token",
+    ];
     for (const f of forbidden) expect(fields).not.toContain(f);
   });
 
@@ -82,7 +102,6 @@ describe("search response privacy", () => {
     expect(a.email !== b.email).toBe(true);
   });
 });
-
 
 describe("PostgREST filter sanitization", () => {
   function sanitizeSearchQuery(raw: string): string {

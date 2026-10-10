@@ -6,8 +6,7 @@ type McpClaimsVerification = {
 };
 
 export type McpAuthenticationResult =
-  | { accessToken: string }
-  | { response: Response };
+  { accessToken: string } | { response: Response };
 
 export async function authenticateMcpRequest(
   authorization: string | null,
@@ -30,7 +29,7 @@ export async function authenticateMcpRequest(
 
   let verification: McpClaimsVerification;
   try {
-    verification = await verifyClaims(accessToken) as McpClaimsVerification;
+    verification = (await verifyClaims(accessToken)) as McpClaimsVerification;
   } catch {
     return unauthorized();
   }
@@ -40,12 +39,15 @@ export async function authenticateMcpRequest(
 
   if (typeof claims.client_id !== "string" || !claims.client_id) {
     return {
-      response: new Response(JSON.stringify({
-        error: "Forbidden: token is not issued via OAuth for MCP access",
-      }), {
-        status: 403,
-        headers: { ...corsHeaders, "content-type": "application/json" },
-      }),
+      response: new Response(
+        JSON.stringify({
+          error: "Forbidden: token is not issued via OAuth for MCP access",
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "content-type": "application/json" },
+        },
+      ),
     };
   }
 

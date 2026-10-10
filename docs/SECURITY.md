@@ -4,7 +4,6 @@ Authorization is enforced in PostgreSQL RLS and must be preserved by Edge Functi
 
 Use caller-scoped Supabase clients in user-facing Edge Functions. Service-role access, if ever required for operational work, is not permitted to decide or bypass user access.
 
-
 ## Push subscriptions and dispatch
 
 Push delivery follows the same authorization model as every other

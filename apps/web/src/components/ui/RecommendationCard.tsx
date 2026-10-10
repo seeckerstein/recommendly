@@ -20,7 +20,12 @@ export type RecommendationCardProps = {
    * Attribution for recommendations that belong to someone else.
    * Omit entirely for the signed-in user's own shelf.
    */
-  owner?: { id?: string; name?: string | null; email?: string | null; avatarUrl?: string | null };
+  owner?: {
+    id?: string;
+    name?: string | null;
+    email?: string | null;
+    avatarUrl?: string | null;
+  };
   /** Show the owner's email under their name to disambiguate identical names. */
   showOwnerEmail?: boolean;
   onEdit?: (r: Recommendation) => void;
@@ -64,7 +69,9 @@ export function RecommendationCard({
             )}{" "}
             recommends
             {showOwnerEmail && owner.email && (
-              <span className="block truncate text-xs text-ink-faint">{owner.email}</span>
+              <span className="block truncate text-xs text-ink-faint">
+                {owner.email}
+              </span>
             )}
           </p>
         </div>
@@ -113,7 +120,9 @@ export function RecommendationCard({
       )}
 
       <footer className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-ink-faint">
-        {recommendation.rating != null && <Rating value={recommendation.rating} size="sm" />}
+        {recommendation.rating != null && (
+          <Rating value={recommendation.rating} size="sm" />
+        )}
         {recommendation.tags?.length > 0 && (
           <ul className="flex flex-wrap gap-x-3">
             {recommendation.tags.map((tag) => (
@@ -129,7 +138,13 @@ export function RecommendationCard({
   );
 }
 
-function OwnerMenu({ onEdit, onDelete }: { onEdit?: () => void; onDelete?: () => void }) {
+function OwnerMenu({
+  onEdit,
+  onDelete,
+}: {
+  onEdit?: () => void;
+  onDelete?: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -159,7 +174,12 @@ function OwnerMenu({ onEdit, onDelete }: { onEdit?: () => void; onDelete?: () =>
         onClick={() => setOpen((v) => !v)}
         className="inline-flex size-10 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-surface-sunk hover:text-ink md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
       >
-        <svg viewBox="0 0 24 24" className="size-5" fill="currentColor" aria-hidden>
+        <svg
+          viewBox="0 0 24 24"
+          className="size-5"
+          fill="currentColor"
+          aria-hidden
+        >
           <circle cx="5" cy="12" r="1.6" />
           <circle cx="12" cy="12" r="1.6" />
           <circle cx="19" cy="12" r="1.6" />
@@ -204,6 +224,10 @@ function OwnerMenu({ onEdit, onDelete }: { onEdit?: () => void; onDelete?: () =>
 }
 
 /** Hairline-separated list of shelf entries. */
-export function RecommendationList({ children }: { children: React.ReactNode }) {
+export function RecommendationList({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return <div className="divide-y divide-line">{children}</div>;
 }

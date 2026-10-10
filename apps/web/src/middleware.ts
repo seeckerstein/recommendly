@@ -4,12 +4,25 @@ import { NextResponse, type NextRequest } from "next/server";
 const PROTECTED_PREFIXES = ["/"];
 const AUTH_ROUTES = ["/auth/login", "/auth/signup"];
 
-type CookieToSet = { name: string; value: string; options?: Record<string, unknown> };
+type CookieToSet = {
+  name: string;
+  value: string;
+  options?: Record<string, unknown>;
+};
 
 function isProtected(pathname: string) {
-  if (pathname.startsWith("/auth") || pathname.startsWith("/oauth")) return false;
-  if (pathname.startsWith("/_next") || pathname.startsWith("/favicon") || pathname.startsWith("/icons") || pathname === "/manifest.json") return false;
-  return PROTECTED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
+  if (pathname.startsWith("/auth") || pathname.startsWith("/oauth"))
+    return false;
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon") ||
+    pathname.startsWith("/icons") ||
+    pathname === "/manifest.json"
+  )
+    return false;
+  return PROTECTED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(prefix),
+  );
 }
 
 export async function middleware(request: NextRequest) {
@@ -26,14 +39,16 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet: CookieToSet[]) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value),
+          );
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            response.cookies.set(name, value, options),
           );
         },
       },
-    }
+    },
   );
 
   const {

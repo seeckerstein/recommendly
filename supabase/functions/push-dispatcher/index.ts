@@ -9,7 +9,8 @@ const serviceClient = createClient(
 
 const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY");
 const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY");
-const vapidSubject = Deno.env.get("VAPID_SUBJECT") ?? "mailto:no-reply@youdlike.me";
+const vapidSubject =
+  Deno.env.get("VAPID_SUBJECT") ?? "mailto:no-reply@youdlike.me";
 
 function json(data: unknown, status: number) {
   return new Response(JSON.stringify(data), {
@@ -111,7 +112,11 @@ Deno.serve(async (request: Request) => {
       const result = await sendPushNotification(
         { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
         payloadForClients,
-        { publicKey: vapidPublicKey, privateKey: vapidPrivateKey, subject: vapidSubject },
+        {
+          publicKey: vapidPublicKey,
+          privateKey: vapidPrivateKey,
+          subject: vapidSubject,
+        },
       );
       if (result.ok) sent++;
       else failed++;
@@ -131,9 +136,15 @@ Deno.serve(async (request: Request) => {
       .delete()
       .in("id", invalidIds);
     if (cleanupError) {
-      console.error("invalid subscription cleanup failed:", cleanupError.message);
+      console.error(
+        "invalid subscription cleanup failed:",
+        cleanupError.message,
+      );
     }
   }
 
-  return json({ sent, failed, cleaned_up: invalidIds.length, unread_count: unreadCount }, 200);
+  return json(
+    { sent, failed, cleaned_up: invalidIds.length, unread_count: unreadCount },
+    200,
+  );
 });

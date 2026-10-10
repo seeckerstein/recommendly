@@ -86,7 +86,9 @@ export default function ProfilePage() {
                   <p className="display text-xl leading-tight text-ink">
                     {profile.display_name || "Your name"}
                   </p>
-                  <p className="truncate text-sm text-ink-faint">{email ?? profile.email}</p>
+                  <p className="truncate text-sm text-ink-faint">
+                    {email ?? profile.email}
+                  </p>
                 </div>
               </div>
 
@@ -99,7 +101,9 @@ export default function ProfilePage() {
                   id="display_name"
                   value={profile.display_name}
                   required
-                  onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
+                  onChange={(e) =>
+                    setProfile({ ...profile, display_name: e.target.value })
+                  }
                 />
               </Field>
 
@@ -114,7 +118,9 @@ export default function ProfilePage() {
                   rows={4}
                   value={profile.bio ?? ""}
                   maxLength={500}
-                  onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                  onChange={(e) =>
+                    setProfile({ ...profile, bio: e.target.value })
+                  }
                 />
               </Field>
 
@@ -125,12 +131,19 @@ export default function ProfilePage() {
                   value={profile.avatar_url ?? ""}
                   placeholder="https://…"
                   onChange={(e) =>
-                    setProfile({ ...profile, avatar_url: e.target.value || null })
+                    setProfile({
+                      ...profile,
+                      avatar_url: e.target.value || null,
+                    })
                   }
                 />
               </Field>
 
-              <Field htmlFor="email" label="Email" hint="Your email is your account identity and can't be changed here.">
+              <Field
+                htmlFor="email"
+                label="Email"
+                hint="Your email is your account identity and can't be changed here."
+              >
                 <Input id="email" type="email" value={email ?? ""} disabled />
               </Field>
 
@@ -145,7 +158,12 @@ export default function ProfilePage() {
                 </p>
               )}
 
-              <Button type="submit" variant="accent" size="lg" disabled={saving}>
+              <Button
+                type="submit"
+                variant="accent"
+                size="lg"
+                disabled={saving}
+              >
                 {saving ? "Saving…" : "Save changes"}
               </Button>
             </form>

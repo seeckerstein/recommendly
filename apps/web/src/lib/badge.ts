@@ -26,7 +26,7 @@ export function syncBrowserTabBadge(unreadCount: number): void {
   if (typeof document === "undefined") return;
 
   const links = Array.from(
-    document.querySelectorAll<HTMLLinkElement>('link[rel~="icon"]')
+    document.querySelectorAll<HTMLLinkElement>('link[rel~="icon"]'),
   );
   for (const link of links) {
     if (!originalFavicons.has(link)) originalFavicons.set(link, link.href);

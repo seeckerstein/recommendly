@@ -10,7 +10,8 @@ const base =
 const variants: Record<Variant, string> = {
   accent: "bg-accent text-white hover:bg-accent-ink shadow-quiet",
   primary: "bg-ink text-paper hover:bg-ink-soft",
-  secondary: "border border-line-strong bg-surface text-ink hover:bg-surface-sunk",
+  secondary:
+    "border border-line-strong bg-surface text-ink hover:bg-surface-sunk",
   ghost: "text-ink-soft hover:bg-surface-sunk hover:text-ink",
   danger: "bg-danger text-white hover:brightness-110",
 };
@@ -46,7 +47,10 @@ export function ButtonLink({
   ...props
 }: ComponentProps<typeof Link> & Shared) {
   return (
-    <Link className={`${base} ${sizes[size]} ${variants[variant]} ${className}`} {...props} />
+    <Link
+      className={`${base} ${sizes[size]} ${variants[variant]} ${className}`}
+      {...props}
+    />
   );
 }
 

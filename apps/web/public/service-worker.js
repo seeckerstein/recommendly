@@ -5,7 +5,11 @@
 const NOTIFICATIONS_URL = "/notifications";
 
 self.addEventListener("push", (event) => {
-  let data = { title: "YOU'D LIKE", body: "You have a new notification.", url: NOTIFICATIONS_URL };
+  let data = {
+    title: "YOU'D LIKE",
+    body: "You have a new notification.",
+    url: NOTIFICATIONS_URL,
+  };
   try {
     if (event.data) data = { ...data, ...event.data.json() };
   } catch {
@@ -36,7 +40,10 @@ self.addEventListener("notificationclick", (event) => {
   const target = event.notification.data?.url ?? NOTIFICATIONS_URL;
   event.waitUntil(
     (async () => {
-      const clientList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      const clientList = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
       const absolute = new URL(target, self.location.origin).href;
       for (const client of clientList) {
         if (client.url.startsWith(self.location.origin)) {

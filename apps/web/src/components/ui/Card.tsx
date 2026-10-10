@@ -47,7 +47,9 @@ export function PageTitle({
           {children}
         </h1>
         {lede && (
-          <p className="mt-3 max-w-prose text-[15px] leading-relaxed text-ink-soft">{lede}</p>
+          <p className="mt-3 max-w-prose text-[15px] leading-relaxed text-ink-soft">
+            {lede}
+          </p>
         )}
       </div>
       {action && <div className="shrink-0">{action}</div>}

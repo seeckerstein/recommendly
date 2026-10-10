@@ -48,6 +48,7 @@ select vault.create_secret('<same value as PUSH_DISPATCHER_SECRET>', 'push_dispa
 Set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `PUSH_DISPATCHER_SECRET` as
 Edge Function secrets, and expose `NEXT_PUBLIC_VAPID_PUBLIC_KEY` to the web
 client. Push stays silently disabled until Vault is provisioned.
+
 ## Weekly recommendation email
 
 The digest runs Fridays at 16:00 UTC (the app has no per-user timezone setting). Deploy `weekly-recommendations-email` with `RESEND_API_KEY` and `WEEKLY_DIGEST_CRON_SECRET` set as Edge Function secrets. The database migration installs Vault but leaves delivery unscheduled. After adding the function URL, matching bearer secret, and production publishable key to Vault, activate it by calling `public.enable_weekly_recommendations_email_schedule()` as `postgres`:

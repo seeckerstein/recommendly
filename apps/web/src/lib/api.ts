@@ -1,8 +1,13 @@
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { assertCreateRecommendation, type CreateRecommendationInput } from "recommendation-domain";
+import {
+  assertCreateRecommendation,
+  type CreateRecommendationInput,
+} from "recommendation-domain";
 const supabase = createSupabaseBrowserClient();
 async function getAuthHeaders() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Not authenticated");
   return {
     Authorization: `Bearer ${session.access_token}`,
@@ -17,12 +22,17 @@ function apiUrl(path: string) {
 export interface Profile {
   id: string;
   email: string;
-    display_name: string;
+  display_name: string;
   bio: string | null;
   avatar_url: string | null;
   profile_visibility: "PRIVATE" | "PUBLIC";
 }
-export async function registerPushSubscription(input: { endpoint: string; p256dh: string; auth: string; user_agent?: string }) {
+export async function registerPushSubscription(input: {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  user_agent?: string;
+}) {
   const res = await fetch(apiUrl("/v1/push-subscriptions"), {
     method: "POST",
     headers: await getAuthHeaders(),
@@ -30,7 +40,9 @@ export async function registerPushSubscription(input: { endpoint: string; p256dh
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error ?? `Failed to register push subscription (${res.status})`);
+    throw new Error(
+      err.error ?? `Failed to register push subscription (${res.status})`,
+    );
   }
 }
 export async function removePushSubscription(endpoint: string) {
@@ -41,11 +53,15 @@ export async function removePushSubscription(endpoint: string) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error ?? `Failed to remove push subscription (${res.status})`);
+    throw new Error(
+      err.error ?? `Failed to remove push subscription (${res.status})`,
+    );
   }
 }
 export async function fetchMe(): Promise<Profile> {
-  const res = await fetch(apiUrl("/v1/me"), { headers: await getAuthHeaders() });
+  const res = await fetch(apiUrl("/v1/me"), {
+    headers: await getAuthHeaders(),
+  });
   if (!res.ok) throw new Error(`Failed to load profile (${res.status})`);
   const json = await res.json();
   return json.data as Profile;
@@ -80,27 +96,41 @@ export async function fetchMyRecommendations(): Promise<Recommendation[]> {
   const res = await fetch(apiUrl("/v1/recommendations?scope=mine"), {
     headers: await getAuthHeaders(),
   });
-  if (!res.ok) throw new Error(`Failed to load recommendations (${res.status})`);
+  if (!res.ok)
+    throw new Error(`Failed to load recommendations (${res.status})`);
   const json = await res.json();
   const recs = (json.data ?? []) as Recommendation[];
   const { data: cats } = await supabase.from("categories").select("id, slug");
   const catMap = new Map((cats ?? []).map((c: any) => [c.id, c.slug]));
-  return recs.map((r) => ({ ...r, category_id: catMap.get(r.category_id) ?? r.category_id }));
+  return recs.map((r) => ({
+    ...r,
+    category_id: catMap.get(r.category_id) ?? r.category_id,
+  }));
 }
 
-export async function fetchDiscoverRecommendations(ownerId?: string): Promise<Recommendation[]> {
+export async function fetchDiscoverRecommendations(
+  ownerId?: string,
+): Promise<Recommendation[]> {
   const params = new URLSearchParams({ scope: "connected" });
   if (ownerId) params.set("owner_id", ownerId);
-  const res = await fetch(apiUrl(`/v1/recommendations?${params.toString()}`), { headers: await getAuthHeaders() });
-  if (!res.ok) throw new Error(`Failed to load recommendations (${res.status})`);
+  const res = await fetch(apiUrl(`/v1/recommendations?${params.toString()}`), {
+    headers: await getAuthHeaders(),
+  });
+  if (!res.ok)
+    throw new Error(`Failed to load recommendations (${res.status})`);
   const json = await res.json();
   const recs = (json.data ?? []) as Recommendation[];
   const { data: cats } = await supabase.from("categories").select("id, slug");
   const catMap = new Map((cats ?? []).map((c: any) => [c.id, c.slug]));
-  return recs.map((r) => ({ ...r, category_id: catMap.get(r.category_id) ?? r.category_id }));
+  return recs.map((r) => ({
+    ...r,
+    category_id: catMap.get(r.category_id) ?? r.category_id,
+  }));
 }
 
-export async function createRecommendation(input: CreateRecommendationInput): Promise<Recommendation> {
+export async function createRecommendation(
+  input: CreateRecommendationInput,
+): Promise<Recommendation> {
   assertCreateRecommendation(input);
   const res = await fetch(apiUrl("/v1/recommendations"), {
     method: "POST",
@@ -109,13 +139,18 @@ export async function createRecommendation(input: CreateRecommendationInput): Pr
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error ?? `Failed to create recommendation (${res.status})`);
+    throw new Error(
+      err.error ?? `Failed to create recommendation (${res.status})`,
+    );
   }
   const json = await res.json();
   return json.data as Recommendation;
 }
 
-export async function updateRecommendation(id: string, patch: Partial<CreateRecommendationInput> & { category_id?: string }): Promise<Recommendation> {
+export async function updateRecommendation(
+  id: string,
+  patch: Partial<CreateRecommendationInput> & { category_id?: string },
+): Promise<Recommendation> {
   const res = await fetch(apiUrl(`/v1/recommendations/${id}`), {
     method: "PATCH",
     headers: await getAuthHeaders(),
@@ -123,7 +158,9 @@ export async function updateRecommendation(id: string, patch: Partial<CreateReco
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error ?? `Failed to update recommendation (${res.status})`);
+    throw new Error(
+      err.error ?? `Failed to update recommendation (${res.status})`,
+    );
   }
   const json = await res.json();
   return json.data as Recommendation;
@@ -135,11 +172,15 @@ export async function deleteRecommendation(id: string): Promise<void> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(err.error ?? `Failed to delete recommendation (${res.status})`);
+    throw new Error(
+      err.error ?? `Failed to delete recommendation (${res.status})`,
+    );
   }
 }
 export async function getCategoryMap(): Promise<Map<string, string>> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   if (!session?.access_token) throw new Error("Not authenticated");
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, "");
   const res = await fetch(`${base}/rest/v1/categories?select=id,slug`, {
@@ -160,13 +201,14 @@ export async function getCategoryMap(): Promise<Map<string, string>> {
 export interface PublicProfile {
   id: string;
   email: string;
-    display_name: string;
+  display_name: string;
   bio: string | null;
   avatar_url: string | null;
   profile_visibility: "PRIVATE" | "PUBLIC";
 }
 export interface UserProfile extends PublicProfile {
-  relationship: "SELF" | "NOT_CONNECTED" | "PENDING" | "APPROVED" | "REJECTED" | "REVOKED";
+  relationship:
+    "SELF" | "NOT_CONNECTED" | "PENDING" | "APPROVED" | "REJECTED" | "REVOKED";
   subscription_id?: string | null;
 }
 export interface SubscriptionRecord {
@@ -186,22 +228,34 @@ export interface AppNotification {
   reference_id: string | null;
   read_at: string | null;
   created_at: string;
-  profiles: { id: string; display_name: string; avatar_url: string | null } | null;
+  profiles: {
+    id: string;
+    display_name: string;
+    avatar_url: string | null;
+  } | null;
 }
 export async function searchUsers(q: string): Promise<PublicProfile[]> {
-  const res = await fetch(apiUrl(`/v1/users?q=${encodeURIComponent(q)}`), { headers: await getAuthHeaders() });
+  const res = await fetch(apiUrl(`/v1/users?q=${encodeURIComponent(q)}`), {
+    headers: await getAuthHeaders(),
+  });
   if (!res.ok) throw new Error(`Search failed (${res.status})`);
   const json = await res.json();
   return json.data as PublicProfile[];
 }
 export async function getUserProfile(userId: string): Promise<UserProfile> {
-  const res = await fetch(apiUrl(`/v1/users/${userId}`), { headers: await getAuthHeaders() });
+  const res = await fetch(apiUrl(`/v1/users/${userId}`), {
+    headers: await getAuthHeaders(),
+  });
   if (!res.ok) throw new Error(`Failed to load user (${res.status})`);
   const json = await res.json();
   return json.data as UserProfile;
 }
-export async function getSubscriptions(type: string): Promise<SubscriptionRecord[]> {
-  const res = await fetch(apiUrl(`/v1/subscriptions?type=${type}`), { headers: await getAuthHeaders() });
+export async function getSubscriptions(
+  type: string,
+): Promise<SubscriptionRecord[]> {
+  const res = await fetch(apiUrl(`/v1/subscriptions?type=${type}`), {
+    headers: await getAuthHeaders(),
+  });
   if (!res.ok) throw new Error(`Failed to load subscriptions (${res.status})`);
   const json = await res.json();
   return json.data as SubscriptionRecord[];
@@ -217,7 +271,10 @@ export async function requestSubscription(publisherId: string): Promise<void> {
     throw new Error(err.error ?? `Failed (${res.status})`);
   }
 }
-export async function transitionSubscription(subscriptionId: string, status: "APPROVED" | "REJECTED" | "REVOKED"): Promise<void> {
+export async function transitionSubscription(
+  subscriptionId: string,
+  status: "APPROVED" | "REJECTED" | "REVOKED",
+): Promise<void> {
   const res = await fetch(apiUrl(`/v1/subscriptions/${subscriptionId}`), {
     method: "PATCH",
     headers: await getAuthHeaders(),
@@ -228,30 +285,42 @@ export async function transitionSubscription(subscriptionId: string, status: "AP
     throw new Error(err.error ?? `Failed (${res.status})`);
   }
 }
-export async function cancelSubscriptionRequest(subscriptionId: string): Promise<void> {
-  const res = await fetch(apiUrl(`/v1/subscriptions/${subscriptionId}/cancel`), {
-    method: "DELETE",
-    headers: await getAuthHeaders(),
-  });
+export async function cancelSubscriptionRequest(
+  subscriptionId: string,
+): Promise<void> {
+  const res = await fetch(
+    apiUrl(`/v1/subscriptions/${subscriptionId}/cancel`),
+    {
+      method: "DELETE",
+      headers: await getAuthHeaders(),
+    },
+  );
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error ?? `Failed to cancel request (${res.status})`);
   }
 }
 export async function unsubscribeFrom(publisherId: string): Promise<void> {
-  const res = await fetch(apiUrl(`/v1/subscriptions/${publisherId}/unsubscribe`), {
-    method: "DELETE",
-    headers: await getAuthHeaders(),
-  });
+  const res = await fetch(
+    apiUrl(`/v1/subscriptions/${publisherId}/unsubscribe`),
+    {
+      method: "DELETE",
+      headers: await getAuthHeaders(),
+    },
+  );
   if (!res.ok) throw new Error(`Failed to unsubscribe (${res.status})`);
 }
 export async function getNotifications(): Promise<AppNotification[]> {
-  const res = await fetch(apiUrl("/v1/notifications"), { headers: await getAuthHeaders() });
+  const res = await fetch(apiUrl("/v1/notifications"), {
+    headers: await getAuthHeaders(),
+  });
   if (!res.ok) throw new Error(`Failed to load notifications (${res.status})`);
   const json = await res.json();
   return json.data as AppNotification[];
 }
-export async function markNotificationRead(notificationId: string): Promise<void> {
+export async function markNotificationRead(
+  notificationId: string,
+): Promise<void> {
   const res = await fetch(apiUrl(`/v1/notifications/${notificationId}/read`), {
     method: "PATCH",
     headers: await getAuthHeaders(),
@@ -268,9 +337,15 @@ export async function getEmailNotificationSettings(): Promise<EmailNotificationS
   const res = await fetch(apiUrl("/v1/settings/email-notifications"), {
     headers: await getAuthHeaders(),
   });
-  if (!res.ok) throw new Error(`Failed to load email notification settings (${res.status})`);
+  if (!res.ok)
+    throw new Error(
+      `Failed to load email notification settings (${res.status})`,
+    );
   const json = await res.json();
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
   if (userError || !user) throw new Error("Not authenticated");
   const { data: weeklySetting, error: weeklyError } = await supabase
     .from("user_settings")
@@ -280,28 +355,41 @@ export async function getEmailNotificationSettings(): Promise<EmailNotificationS
   if (weeklyError) throw new Error(weeklyError.message);
   return {
     email_contact_requests: json.data?.email_contact_requests ?? true,
-    email_weekly_recommendations: weeklySetting?.email_weekly_recommendations ?? true,
+    email_weekly_recommendations:
+      weeklySetting?.email_weekly_recommendations ?? true,
   };
 }
 
-export async function updateEmailNotificationSettings(settings: Partial<EmailNotificationSettingsValue>): Promise<void> {
+export async function updateEmailNotificationSettings(
+  settings: Partial<EmailNotificationSettingsValue>,
+): Promise<void> {
   if (settings.email_contact_requests !== undefined) {
     const res = await fetch(apiUrl("/v1/settings/email-notifications"), {
       method: "PATCH",
       headers: await getAuthHeaders(),
-      body: JSON.stringify({ email_contact_requests: settings.email_contact_requests }),
+      body: JSON.stringify({
+        email_contact_requests: settings.email_contact_requests,
+      }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: res.statusText }));
-      throw new Error(err.error ?? `Failed to update email notification settings (${res.status})`);
+      throw new Error(
+        err.error ??
+          `Failed to update email notification settings (${res.status})`,
+      );
     }
   }
   if (settings.email_weekly_recommendations !== undefined) {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
     if (userError || !user) throw new Error("Not authenticated");
     const { error } = await supabase
       .from("user_settings")
-      .update({ email_weekly_recommendations: settings.email_weekly_recommendations })
+      .update({
+        email_weekly_recommendations: settings.email_weekly_recommendations,
+      })
       .eq("user_id", user.id);
     if (error) throw new Error(error.message);
   }

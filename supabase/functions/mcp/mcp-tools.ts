@@ -37,7 +37,8 @@ export const tools = [
           type: "integer",
           minimum: 1,
           maximum: 100,
-          description: "Maximum number of recommendations to return (default 20).",
+          description:
+            "Maximum number of recommendations to return (default 20).",
         },
       },
       required: [],
@@ -59,7 +60,8 @@ export const tools = [
         owner_id: {
           type: "string",
           format: "uuid",
-          description: "Optional. Narrow results to recommendations by this person (must be someone the user is connected to).",
+          description:
+            "Optional. Narrow results to recommendations by this person (must be someone the user is connected to).",
         },
         category: {
           type: "string",
@@ -74,12 +76,14 @@ export const tools = [
           type: "integer",
           minimum: 1,
           maximum: 100,
-          description: "Maximum number of recommendations to return (default 20).",
+          description:
+            "Maximum number of recommendations to return (default 20).",
         },
       },
       required: [],
     },
-  },  {
+  },
+  {
     name: "create_recommendation",
     description:
       "Create a new recommendation for the authenticated Recommendly user. " +
@@ -98,7 +102,11 @@ export const tools = [
           minLength: 1,
           description: "Why the user recommends this. Required.",
         },
-        title: { type: "string", description: "The primary display title of the recommendation. Put the item's actual name here, for example 'The Rookie'. Never place the primary title inside metadata." },
+        title: {
+          type: "string",
+          description:
+            "The primary display title of the recommendation. Put the item's actual name here, for example 'The Rookie'. Never place the primary title inside metadata.",
+        },
         rating: {
           type: "integer",
           minimum: 1,
@@ -141,7 +149,11 @@ export const tools = [
           enum: ["book", "movie", "restaurant", "series", "other"],
           description: "Change the category if supplied.",
         },
-        comment: { type: "string", minLength: 1, description: "Updated comment." },
+        comment: {
+          type: "string",
+          minLength: 1,
+          description: "Updated comment.",
+        },
         title: { type: "string", description: "Updated title." },
         rating: {
           type: "integer",
@@ -156,7 +168,8 @@ export const tools = [
         },
         metadata: {
           type: "object",
-          description: "Updated additional structured attributes. Do not put title, comment, rating, or tags inside metadata.",
+          description:
+            "Updated additional structured attributes. Do not put title, comment, rating, or tags inside metadata.",
         },
       },
       required: ["id"],
@@ -170,7 +183,10 @@ export const tools = [
 
 export const API_BASE = `${SUPABASE_URL.replace(/\/$/, "")}/functions/v1/api`;
 
-export function apiHeaders(accessToken: string, extra: Record<string, string> = {}) {
+export function apiHeaders(
+  accessToken: string,
+  extra: Record<string, string> = {},
+) {
   return {
     Authorization: `Bearer ${accessToken}`,
     "Content-Type": "application/json",
@@ -185,7 +201,10 @@ export async function apiFetch(
 ): Promise<{ status: number; body: unknown }> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
-    headers: apiHeaders(accessToken, (init.headers ?? {}) as Record<string, string>),
+    headers: apiHeaders(
+      accessToken,
+      (init.headers ?? {}) as Record<string, string>,
+    ),
   });
   let body: unknown = null;
   try {
@@ -222,20 +241,34 @@ export async function toolGetMyRecommendations(
   if (typeof args.limit === "number" && args.limit > 0) {
     params.set("limit", String(Math.min(args.limit, 100)));
   }
-  const { status, body } = await apiFetch(accessToken, `/v1/recommendations?${params.toString()}`);
+  const { status, body } = await apiFetch(
+    accessToken,
+    `/v1/recommendations?${params.toString()}`,
+  );
   if (status !== 200) {
     throw new Error(`Recommendly API error (${status})`);
   }
-  let recs = ((body as { data?: unknown[] }).data ?? []) as Record<string, unknown>[];
+  let recs = ((body as { data?: unknown[] }).data ?? []) as Record<
+    string,
+    unknown
+  >[];
 
   // Resolve category slugs using the categories table.
-  const catRes = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/categories?select=id,slug`, {
-    headers: apiHeaders(accessToken, { apikey: Deno.env.get("SUPABASE_ANON_KEY")! }),
-  });
+  const catRes = await fetch(
+    `${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/categories?select=id,slug`,
+    {
+      headers: apiHeaders(accessToken, {
+        apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+      }),
+    },
+  );
   if (catRes.ok) {
     const cats = (await catRes.json()) as { id: string; slug: string }[];
     const catMap = new Map(cats.map((c) => [c.id, c.slug]));
-    recs = recs.map((r) => ({ ...r, category_slug: catMap.get(String(r.category_id)) ?? r.category_id }));
+    recs = recs.map((r) => ({
+      ...r,
+      category_slug: catMap.get(String(r.category_id)) ?? r.category_id,
+    }));
   }
 
   // Filter by category if requested
@@ -246,16 +279,31 @@ export async function toolGetMyRecommendations(
   // Free-text search across title and comment
   if (typeof args.search === "string" && args.search.trim()) {
     const needle = args.search.trim().toLowerCase();
-    recs = recs.filter((r) =>
-      String(r.title ?? "").toLowerCase().includes(needle) ||
-      String(r.comment ?? "").toLowerCase().includes(needle)
+    recs = recs.filter(
+      (r) =>
+        String(r.title ?? "")
+          .toLowerCase()
+          .includes(needle) ||
+        String(r.comment ?? "")
+          .toLowerCase()
+          .includes(needle),
     );
   }
 
-  return { recommendations: recs.slice(0, typeof args.limit === "number" ? args.limit : 20).map(cleanRecommendation) };
+  return {
+    recommendations: recs
+      .slice(0, typeof args.limit === "number" ? args.limit : 20)
+      .map(cleanRecommendation),
+  };
 }
 
-export const CATEGORY_SLUGS = new Set(["book", "movie", "restaurant", "series", "other"]);
+export const CATEGORY_SLUGS = new Set([
+  "book",
+  "movie",
+  "restaurant",
+  "series",
+  "other",
+]);
 
 export async function toolCreateRecommendation(
   accessToken: string,
@@ -276,14 +324,17 @@ export async function toolCreateRecommendation(
     body: JSON.stringify(args),
   });
   if (status !== 201) {
-    const message = (body as { error?: string })?.error ?? `Recommendly API error (${status})`;
+    const message =
+      (body as { error?: string })?.error ??
+      `Recommendly API error (${status})`;
     throw new Error(message);
   }
   const data = (body as { data?: Record<string, unknown> }).data;
   return { recommendation: data ? cleanRecommendation(data) : null };
 }
 
-export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function toolUpdateRecommendation(
   accessToken: string,
@@ -291,10 +342,18 @@ export async function toolUpdateRecommendation(
 ) {
   const id = String(args.id ?? "");
   if (!UUID_RE.test(id)) {
-    throw new Error("A valid recommendation id is required (use get_my_recommendations to find it).");
+    throw new Error(
+      "A valid recommendation id is required (use get_my_recommendations to find it).",
+    );
   }
   const patch: Record<string, unknown> = {};
-  for (const key of ["title", "comment", "rating", "tags", "metadata"] as const) {
+  for (const key of [
+    "title",
+    "comment",
+    "rating",
+    "tags",
+    "metadata",
+  ] as const) {
     if (args[key] !== undefined) patch[key] = args[key];
   }
   if (args.rating !== undefined && args.rating !== null) {
@@ -308,9 +367,14 @@ export async function toolUpdateRecommendation(
     if (!CATEGORY_SLUGS.has(String(args.category))) {
       throw new Error(`Unsupported category: ${args.category}`);
     }
-    const catRes = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/categories?select=id,slug&slug=eq.${args.category}`, {
-      headers: apiHeaders(accessToken, { apikey: Deno.env.get("SUPABASE_ANON_KEY")! }),
-    });
+    const catRes = await fetch(
+      `${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/categories?select=id,slug&slug=eq.${args.category}`,
+      {
+        headers: apiHeaders(accessToken, {
+          apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+        }),
+      },
+    );
     if (!catRes.ok) throw new Error("Failed to resolve category.");
     const cats = (await catRes.json()) as { id: string; slug: string }[];
     const cat = cats[0];
@@ -320,12 +384,18 @@ export async function toolUpdateRecommendation(
   if (Object.keys(patch).length === 0) {
     throw new Error("No fields to update.");
   }
-  const { status, body } = await apiFetch(accessToken, `/v1/recommendations/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify(patch),
-  });
+  const { status, body } = await apiFetch(
+    accessToken,
+    `/v1/recommendations/${id}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    },
+  );
   if (status !== 200) {
-    const message = (body as { error?: string })?.error ?? `Recommendly API error (${status})`;
+    const message =
+      (body as { error?: string })?.error ??
+      `Recommendly API error (${status})`;
     throw new Error(message);
   }
   const data = (body as { data?: Record<string, unknown> }).data;
@@ -343,20 +413,33 @@ export async function toolGetConnectedRecommendations(
   if (typeof args.limit === "number" && args.limit > 0) {
     params.set("limit", String(Math.min(args.limit, 100)));
   }
-  const { status, body } = await apiFetch(accessToken, `/v1/recommendations?${params.toString()}`);
+  const { status, body } = await apiFetch(
+    accessToken,
+    `/v1/recommendations?${params.toString()}`,
+  );
   if (status !== 200) {
     throw new Error(`Recommendly API error (${status})`);
   }
-  let recs = ((body as { data?: unknown[] }).data ?? []) as Record<string, unknown>[];
+  let recs = ((body as { data?: unknown[] }).data ?? []) as Record<
+    string,
+    unknown
+  >[];
 
-
-  const catRes = await fetch(`${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/categories?select=id,slug`, {
-    headers: apiHeaders(accessToken, { apikey: Deno.env.get("SUPABASE_ANON_KEY")! }),
-  });
+  const catRes = await fetch(
+    `${SUPABASE_URL.replace(/\/$/, "")}/rest/v1/categories?select=id,slug`,
+    {
+      headers: apiHeaders(accessToken, {
+        apikey: Deno.env.get("SUPABASE_ANON_KEY")!,
+      }),
+    },
+  );
   if (catRes.ok) {
     const cats = (await catRes.json()) as { id: string; slug: string }[];
     const catMap = new Map(cats.map((c) => [c.id, c.slug]));
-    recs = recs.map((r) => ({ ...r, category_slug: catMap.get(String(r.category_id)) ?? r.category_id }));
+    recs = recs.map((r) => ({
+      ...r,
+      category_slug: catMap.get(String(r.category_id)) ?? r.category_id,
+    }));
   }
 
   if (typeof args.category === "string") {
@@ -365,20 +448,32 @@ export async function toolGetConnectedRecommendations(
 
   if (typeof args.search === "string" && args.search.trim()) {
     const needle = args.search.trim().toLowerCase();
-    recs = recs.filter((r) =>
-      String(r.title ?? "").toLowerCase().includes(needle) ||
-      String(r.comment ?? "").toLowerCase().includes(needle)
+    recs = recs.filter(
+      (r) =>
+        String(r.title ?? "")
+          .toLowerCase()
+          .includes(needle) ||
+        String(r.comment ?? "")
+          .toLowerCase()
+          .includes(needle),
     );
   }
 
-  return { recommendations: recs.slice(0, typeof args.limit === "number" ? args.limit : 20).map((r) => ({
-    ...cleanRecommendation(r),
-    owner_id: r.owner_id ?? null,
-    owner_name: r.owner_name ?? null,
-    owner_email: r.owner_email ?? null,
-  })) };
+  return {
+    recommendations: recs
+      .slice(0, typeof args.limit === "number" ? args.limit : 20)
+      .map((r) => ({
+        ...cleanRecommendation(r),
+        owner_id: r.owner_id ?? null,
+        owner_name: r.owner_name ?? null,
+        owner_email: r.owner_email ?? null,
+      })),
+  };
 }
-export const toolHandlers: Record<string, (accessToken: string, args: Record<string, unknown>) => Promise<unknown>> = {
+export const toolHandlers: Record<
+  string,
+  (accessToken: string, args: Record<string, unknown>) => Promise<unknown>
+> = {
   get_my_recommendations: toolGetMyRecommendations,
   get_connected_recommendations: toolGetConnectedRecommendations,
   create_recommendation: toolCreateRecommendation,
