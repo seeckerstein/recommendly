@@ -9,12 +9,11 @@ update public.profiles set display_name = 'Publisher' where id = '00000000-0000-
 
 -- Provision the dispatcher with an unreachable URL so pg_net raises
 -- synchronously during the trigger. Notification creation must survive it.
-insert into vault.secrets (secret, name) values
-  ('https://127.0.0.1:9/push', 'push_dispatcher_function_url'),
-  ('test-dispatcher-secret', 'push_dispatcher_secret');
+select vault.create_secret('https://127.0.0.1:9/push', 'push_dispatcher_function_url');
+select vault.create_secret('test-dispatcher-secret', 'push_dispatcher_secret');
 
 set local role authenticated;
-select pg_temp._as('00000000-0000-0000-0000-000000000101');
+select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000101', true);
 select lives_ok(
   $$select public.request_subscription('00000000-0000-0000-0000-000000000102')$$,
   '[push-dispatch] notification creation succeeds when push dispatch fails'
