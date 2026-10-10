@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   groupDigestRecommendations,
+  parseWeeklyDigestRecipientIds,
   renderWeeklyDigest,
   shouldSendWeeklyDigest,
   type DigestRecommendation,
@@ -47,8 +48,21 @@ describe("weekly recommendation digest", () => {
     expect(html).toContain("Dune &lt;script&gt;");
     expect(html).toContain("Browse recommendations");
     expect(html).not.toContain("<script>");
+    expect(html).toContain('<p style="margin:4px 0;color:#555">A classic</p>');
   });
 
+  it.each([null, "", "  \n\t"])(
+    "renders a recommendation without an empty description when its comment is %s",
+    (comment) => {
+      const html = renderWeeklyDigest(
+        [{ ...items[0], comment }],
+        "https://www.youdlike.me/discover-recommendations",
+      );
+
+      expect(html).toContain("Dune");
+      expect(html).not.toContain('<p style="margin:4px 0;color:#555">');
+    },
+  );
   it("renders no empty category sections for an empty recommendation list", () => {
     const html = renderWeeklyDigest(
       [],
@@ -62,4 +76,32 @@ describe("weekly recommendation digest", () => {
     expect(shouldSendWeeklyDigest(true, items)).toBe(true);
     expect(shouldSendWeeklyDigest(true, [])).toBe(false);
   });
+});
+describe("weekly digest recipient targeting", () => {
+  it("keeps an empty scheduled request scoped to all recipients", () => {
+    expect(parseWeeklyDigestRecipientIds({})).toEqual({ valid: true });
+  });
+
+  it("accepts and deduplicates an explicit recipient allowlist", () => {
+    expect(
+      parseWeeklyDigestRecipientIds({
+        recipient_ids: [
+          "159b928b-361a-4aa7-8877-5b2fd64af094",
+          "159b928b-361a-4aa7-8877-5b2fd64af094",
+        ],
+      }),
+    ).toEqual({
+      valid: true,
+      recipientIds: ["159b928b-361a-4aa7-8877-5b2fd64af094"],
+    });
+  });
+
+  it.each([null, [], ["not-a-uuid"]])(
+    "rejects invalid recipient scopes",
+    (body) => {
+      expect(parseWeeklyDigestRecipientIds({ recipient_ids: body })).toEqual({
+        valid: false,
+      });
+    },
+  );
 });

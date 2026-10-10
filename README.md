@@ -62,6 +62,14 @@ select public.enable_weekly_recommendations_email_schedule();
 
 The digest skips accounts with no currently accessible recommendations. Its database query applies the same `can_view_recommendation` predicate as recommendation RLS.
 
+### Recovering an interrupted digest
+
+The function sends sequentially but does not persist per-recipient send records or use a delivery idempotency key. The cron records the HTTP request result, not which recipients were accepted by Resend. A failed run may therefore have sent some emails; never replay it as a full batch without checking provider events.
+
+For a controlled recovery, first inspect Resend events around the failed run. Retry only recipients confirmed to have no accepted message (or a confirmed failed/bounced message that should be retried); exclude any recipient whose outcome is uncertain. After the reviewed function fix is separately deployed, send a manual `POST` to the URL in `weekly_digest_function_url` with the same `apikey` and bearer authorization headers used by the cron, and a JSON body containing only the selected IDs: `{"recipient_ids":["<recipient-uuid>"]}`. The function rechecks current email preferences and recommendation access. Review `sent`, `skipped`, `failed`, and `failed_user_ids`; HTTP 207 indicates at least one recipient failed. Check Resend events before retrying any failed request because an accepted message could still have been delivered. Keep the Vault values in the approved secret manager and out of shell history, logs, and PRs.
+
+An empty body or `{}` retains the scheduled full-batch behavior. Do not use either for incident recovery; the endpoint has no durable deduplication and a repeated targeted request can also send duplicates.
+
 ## Repository map
 
 - `supabase/migrations`: canonical Postgres schema, RLS, and database functions
