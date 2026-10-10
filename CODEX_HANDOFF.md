@@ -71,33 +71,35 @@ SQL migrations are the schema source of truth. Any schema change must be represe
 
 Expected high-level structure:
 
+```text
 recommendation-network/
-apps/
-mobile/
-web/ # optional
-supabase/
-config.toml
-migrations/
-functions/
-api/
-mcp/
-notifications/
-enrich-recommendation/
-seed.sql
-tests/
-packages/
-domain/
-validation/
-api-client/
-shared-types/
-docs/
-PRD.md
-CODEX_BUILD_SPEC.md
-SECURITY.md
-.mcp.json
-AGENTS.md
-README.md
-package.json
+  apps/
+    mobile/
+    web/                  # optional
+  supabase/
+    config.toml
+    migrations/
+    functions/
+      api/
+      mcp/
+      notifications/
+      enrich-recommendation/
+    seed.sql
+    tests/
+  packages/
+    domain/
+    validation/
+    api-client/
+    shared-types/
+  docs/
+    PRD.md
+    CODEX_BUILD_SPEC.md
+    SECURITY.md
+  .mcp.json
+  AGENTS.md
+  README.md
+  package.json
+```
 
 The previous Desktop Codex session created/edited the project foundation and documentation. The actual repository should be inspected to determine the exact current state.
 
