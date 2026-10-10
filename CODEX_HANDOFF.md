@@ -217,6 +217,12 @@ Do NOT blindly deploy until the new agent checks the current repository, migrati
 
 ---
 
+## 4A. Production deployment lesson: database and function releases are separate
+
+A production incident demonstrated that applying migrations does not deploy the matching Supabase Edge Function. The pending-request cancellation migration had been applied, while the hosted `api` function still lacked the cancellation route. The UI consequently received `Not found`. Deploying the current merged `api` function separately resolved the issue.
+
+For future releases, treat database migrations and Edge Functions as separate artifacts: verify and apply committed migrations through the project-local CLI only when authorized; separately deploy changed Edge Functions from the verified merged commit using the explicit production ref; then inspect deployed source/version and validate behavior safely. Do not infer function deployment from migration status or from the presence of a GitHub connection. Avoid testing destructive actions against real users' pending requests.
+
 ## 5. Important troubleshooting history
 
 ### PowerShell / npm
