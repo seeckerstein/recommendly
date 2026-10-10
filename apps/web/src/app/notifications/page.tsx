@@ -13,6 +13,7 @@ import {
   getSubscriptions,
   markNotificationRead,
   transitionSubscription,
+  cancelSubscriptionRequest,
   type AppNotification,
   type SubscriptionRecord,
 } from "@/lib/api";
@@ -65,6 +66,18 @@ export default function NotificationsPage() {
       await transitionSubscription(n.reference_id, status);
       await markNotificationRead(n.id);
       markLocallyRead(n.id);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleCancelRequest(s: SubscriptionRecord) {
+    setActionLoading(s.id + "cancel");
+    try {
+      await cancelSubscriptionRequest(s.id);
+      setSent((prev) => prev?.filter((item) => item.id !== s.id) ?? null);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -234,6 +247,15 @@ export default function NotificationsPage() {
                         {formatRelative(s.requested_at)}
                       </time>
                     </div>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="text-danger"
+                      onClick={() => handleCancelRequest(s)}
+                      disabled={actionLoading === s.id + "cancel"}
+                    >
+                      {actionLoading === s.id + "cancel" ? "…" : "Remove request"}
+                    </Button>
                   </li>
                 ))}
               </ul>
