@@ -167,6 +167,12 @@ migration file in Git
 
 Do not use a management API/tool to apply a migration that has not travelled through the repository workflow.
 
+## 7A. Supabase release parity: migrations vs Edge Functions
+
+Supabase migrations and Edge Functions are independent deployment units. A migration can be applied while the production Edge Function remains on an older version; the reverse is also possible. A green migration dry run says nothing about whether function code is current.
+
+For an explicitly authorized production release, use the project-local CLI and explicit project ref `zpjsmuuxgcewmymmdddr`. Verify the merged commit, inspect remote migration history and dry-run before applying only intended committed migrations, then separately deploy each changed function. After deployment, retrieve the deployed function source/version and confirm it contains the expected handlers and RPC calls. Perform a safe end-to-end smoke test where possible. Do not assume connecting GitHub enables all deployment steps; check the project's actual integration/workflow configuration. Never deploy without explicit authorization.
+
 ## 8. Environment troubleshooting rules
 
 When something fails:

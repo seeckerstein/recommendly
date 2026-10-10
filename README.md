@@ -15,6 +15,20 @@ This repository intentionally starts with the Supabase backend foundation. The m
 
 **Supabase production target:** the only hosted Recommendly project is `recommendly-dev` (`zpjsmuuxgcewmymmdddr`), confirmed by the owner as the production project; there is no separate production project. The dashboard shows the `PRODUCTION` environment badge even though the project name includes `-dev`. Keep local development and DB tests on the local Supabase stack; do not point disposable development tooling or destructive reset commands at the hosted project. Commit every schema change as a migration and verify migration history before any explicitly authorized production deployment.
 
+## Supabase deployment workflow
+
+Supabase database migrations and Edge Functions are separate deployment artifacts. Applying migrations does **not** deploy updated Edge Function code, and deploying an Edge Function does **not** apply database migrations. A feature that changes both may require both steps.
+
+For an explicitly authorized production release:
+
+1. Merge the reviewed source and migration files to `main`.
+2. Inspect the hosted project's migration history and dry-run pending migrations with the project-local Supabase CLI; apply only the intended committed migrations.
+3. Separately deploy each changed Edge Function from the verified merged source using the project-local CLI and explicit production ref `zpjsmuuxgcewmymmdddr`.
+4. Retrieve/inspect the deployed function source or otherwise verify its version contains the expected handler, then perform a safe authenticated smoke test where possible.
+5. Verify the application behavior. A successful database migration or function deployment alone is not end-to-end verification.
+
+Do not assume the Supabase GitHub integration automatically deploys every artifact. Confirm the configured workflow. Never deploy functions or migrations to production without explicit authorization.
+
 ## Push notifications
 
 Browser push (Chrome desktop and installed Android PWA) is layered on the
