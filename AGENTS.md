@@ -135,6 +135,19 @@ Do not run production SQL directly. Production schema changes must travel throug
 
 Do not deploy Edge Functions or modify production secrets/Vault unless the user explicitly authorizes deployment.
 
+### Supabase deployment parity
+
+Database migrations and Edge Functions deploy independently. Applying a migration does not update the deployed function bundle; deploying a function does not apply migrations. When a change touches both, plan, authorize, and verify both deployment steps separately.
+
+For an authorized production release:
+- verify the checked-out source is the intended merged commit;
+- inspect migration history and dry-run before applying committed migrations with the project-local Supabase CLI and explicit production ref;
+- deploy only the changed Edge Function(s) from that verified source, also with the project-local CLI and explicit ref;
+- verify deployed function source/version includes the expected route and database RPC contract;
+- run a safe end-to-end smoke test when possible, without mutating real users' data.
+
+Do not infer that GitHub integration or a successful migration automatically deploys Edge Functions. Confirm the actual configured workflow. Do not deploy either artifact without explicit authorization.
+
 ## 7. Testing
 
 For permission-sensitive changes, unit tests alone are insufficient.
