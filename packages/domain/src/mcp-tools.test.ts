@@ -8,6 +8,43 @@ type ApiResponse = { status: number; body: unknown };
 
 const apiCalls: { path: string; init: RequestInit }[] = [];
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function assertRecommendationList(
+  value: unknown,
+): asserts value is { recommendations: Record<string, unknown>[] } {
+  if (
+    !isRecord(value) ||
+    !Array.isArray(value.recommendations) ||
+    !value.recommendations.every(isRecord)
+  ) {
+    throw new Error("Expected recommendations to be a list of objects.");
+  }
+}
+
+function assertCreatedRecommendation(
+  value: unknown,
+): asserts value is { recommendation: Record<string, unknown> } {
+  if (!isRecord(value) || !isRecord(value.recommendation)) {
+    throw new Error("Expected a created recommendation object.");
+  }
+}
+
+function parseRequestBody(init: RequestInit): Record<string, unknown> {
+  if (typeof init.body !== "string") {
+    throw new Error("Expected the request body to be serialized JSON.");
+  }
+
+  const body: unknown = JSON.parse(init.body);
+  if (!isRecord(body)) {
+    throw new Error("Expected the request body to be a JSON object.");
+  }
+
+  return body;
+}
+
 let nextResponse: ApiResponse = { status: 200, body: { data: [] } };
 
 vi.stubGlobal("fetch", vi.fn(async (url: unknown, init: RequestInit = {}) => {
@@ -86,6 +123,7 @@ describe("get_connected_recommendations", () => {
     ] } };
 
     const result = await toolHandlers.get_connected_recommendations("token", {});
+    assertRecommendationList(result);
     expect(apiCalls[0].path).toContain("/v1/recommendations?scope=connected");
     expect(apiCalls[0].init.headers).toMatchObject({ Authorization: "Bearer token" });
 
@@ -119,6 +157,7 @@ describe("get_connected_recommendations", () => {
     ] } };
 
     const result = await toolHandlers.get_connected_recommendations("token", { category: "book" });
+    assertRecommendationList(result);
     expect(result.recommendations.length).toBe(1);
     expect(result.recommendations[0].title).toBe("Book");
   });
@@ -131,6 +170,7 @@ describe("get_connected_recommendations", () => {
     ] } };
 
     const result = await toolHandlers.get_connected_recommendations("token", { search: "tuscany" });
+    assertRecommendationList(result);
     expect(result.recommendations.length).toBe(1);
     expect(result.recommendations[0].title).toBe("Tuscany");
   });
@@ -143,6 +183,7 @@ describe("get_connected_recommendations", () => {
     })) } };
 
     const result = await toolHandlers.get_connected_recommendations("token", { limit: 5 });
+    assertRecommendationList(result);
     expect(result.recommendations.length).toBe(5);
   });
 });
@@ -155,6 +196,7 @@ describe("get_my_recommendations", () => {
     ] } };
 
     const result = await toolHandlers.get_my_recommendations("token", {});
+    assertRecommendationList(result);
     expect(apiCalls[0].path).toContain("/v1/recommendations?scope=mine");
     expect(apiCalls[0].init.headers).toMatchObject({ Authorization: "Bearer token" });
 
@@ -178,6 +220,7 @@ describe("get_my_recommendations", () => {
       { id: "r2", category_id: "cat-movie", comment: "b", created_at: "2024-01-02" },
     ] } };
     const result = await toolHandlers.get_my_recommendations("token", { category: "movie" });
+    assertRecommendationList(result);
     expect(result.recommendations).toHaveLength(1);
     expect(String(result.recommendations[0].category)).toBe("movie");
   });
@@ -188,6 +231,7 @@ describe("get_my_recommendations", () => {
       { id: "r2", category_id: "cat-book", title: "Dune", comment: "Spice", created_at: "2024-01-02" },
     ] } };
     const result = await toolHandlers.get_my_recommendations("token", { search: "hobbit" });
+    assertRecommendationList(result);
     expect(result.recommendations).toHaveLength(1);
     expect(result.recommendations[0].id).toBe("r1");
   });
@@ -197,6 +241,7 @@ describe("get_my_recommendations", () => {
       id: `r${i}`, category_id: "cat-book", comment: "x", created_at: "2024-01-01",
     })) } };
     const result = await toolHandlers.get_my_recommendations("token", { limit: 2 });
+    assertRecommendationList(result);
     expect(result.recommendations).toHaveLength(2);
   });
 });
@@ -219,11 +264,15 @@ describe("create_recommendation - series/other (5.7)", () => {
       rating: 3,
       metadata: { platform: "ABC" },
     });
-    const payload = JSON.parse(apiCalls[0].init.body);
+    const payload = parseRequestBody(apiCalls[0].init);
     expect(payload.category).toBe("series");
     expect(payload.title).toBe("The Rookie");
     expect(payload.metadata).toEqual({ platform: "ABC" });
+    if (!isRecord(payload.metadata)) {
+      throw new Error("Expected request metadata to be an object.");
+    }
     expect(payload.metadata.title).toBeUndefined();
+    assertCreatedRecommendation(result);
     expect(result.recommendation.id).toBe("r-series");
   });
 
@@ -237,7 +286,7 @@ describe("create_recommendation - series/other (5.7)", () => {
       comment: "Great",
       metadata: { type: "podcast" },
     });
-    const payload = JSON.parse(apiCalls[0].init.body);
+    const payload = parseRequestBody(apiCalls[0].init);
     expect(payload.category).toBe("other");
     expect(payload.metadata).toEqual({ type: "podcast" });
     expect(payload.title).toBe("A podcast");
@@ -256,8 +305,9 @@ describe("create_recommendation", () => {
     });
     expect(apiCalls[0].path).toContain("/v1/recommendations");
     expect(apiCalls[0].init.method).toBe("POST");
-    const payload = JSON.parse(apiCalls[0].init.body);
+    const payload = parseRequestBody(apiCalls[0].init);
     expect(payload).toMatchObject({ category: "book", comment: "test", rating: 4 });
+    assertCreatedRecommendation(result);
     expect(result.recommendation.id).toBe("r-new");
   });
 
@@ -272,8 +322,9 @@ describe("create_recommendation", () => {
     apiCalls.length = 0;
     nextResponse = { status: 201, body: { data: { id: "r-title", category_id: "cat-book", title: "The Hobbit", created_at: "2024-01-01" } } };
     const result = await toolHandlers.create_recommendation("token", { category: "book", title: "The Hobbit" });
-    const payload = JSON.parse(apiCalls[0].init.body);
+    const payload = parseRequestBody(apiCalls[0].init);
     expect(payload.title).toBe("The Hobbit");
+    assertCreatedRecommendation(result);
     expect(result.recommendation.id).toBe("r-title");
   });
 
@@ -312,10 +363,13 @@ describe("update_recommendation", () => {
       rating: 3,
     });
     const patchCall = apiCalls.find((c) => c.path.includes("/v1/recommendations/"));
-    expect(patchCall).toBeDefined();
-    expect(patchCall!.init.method).toBe("PATCH");
-    const payload = JSON.parse(patchCall!.init.body);
+    if (!patchCall) {
+      throw new Error("Expected a recommendation update request.");
+    }
+    expect(patchCall.init.method).toBe("PATCH");
+    const payload = parseRequestBody(patchCall.init);
     expect(payload).toMatchObject({ comment: "updated", rating: 3, category_id: expect.any(String) });
+    assertCreatedRecommendation(result);
     expect(String(result.recommendation.category)).toBe("cat-movie");
   });
 
@@ -352,10 +406,9 @@ describe("update_recommendation", () => {
     await toolHandlers.update_recommendation("token", {
       id: "00000000-0000-0000-0000-000000000000",
       comment: "x",
-      // @ts-expect-error user_id is not a valid tool argument
       user_id: "attacker-id",
     });
-    const payload = JSON.parse(apiCalls[0].init.body);
+    const payload = parseRequestBody(apiCalls[0].init);
     expect(payload.user_id).toBeUndefined();
   });
 });

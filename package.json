@@ -8,11 +8,12 @@
     "typecheck": "tsc --noEmit",
     "test": "pnpm test:unit",
     "test:unit": "vitest run",
-    "test:db": "supabase test db",
+    "test:db": "supabase test db --local",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop"
   },
   "devDependencies": {
+    "@types/deno": "2.7.0",
     "@types/node": "^22.0.0",
     "prettier": "^3.0.0",
     "supabase": "^2.115.0",
