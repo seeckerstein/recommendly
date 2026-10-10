@@ -9,8 +9,20 @@ describe("notification visibility", () => {
   const actor = "user-a";
 
   const notifications = [
-    { id: "1", user_id: recipient, actor_user_id: actor, type: "subscription_request", read_at: null },
-    { id: "2", user_id: recipient, actor_user_id: actor, type: "subscription_approved", read_at: "2026-08-30T00:00:00Z" },
+    {
+      id: "1",
+      user_id: recipient,
+      actor_user_id: actor,
+      type: "subscription_request",
+      read_at: null,
+    },
+    {
+      id: "2",
+      user_id: recipient,
+      actor_user_id: actor,
+      type: "subscription_approved",
+      read_at: "2026-08-30T00:00:00Z",
+    },
   ];
 
   it("counts unread notifications", () => {
@@ -29,7 +41,9 @@ describe("notification visibility", () => {
   });
 
   it("prioritizes pending access requests", () => {
-    const pending = notifications.filter((n) => n.type === "subscription_request" && !n.read_at);
+    const pending = notifications.filter(
+      (n) => n.type === "subscription_request" && !n.read_at,
+    );
     expect(pending.length).toBe(1);
   });
 });

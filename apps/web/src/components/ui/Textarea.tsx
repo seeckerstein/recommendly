@@ -1,6 +1,10 @@
 import type { ComponentProps } from "react";
 
-export function Textarea({ className = "", rows = 4, ...props }: ComponentProps<"textarea">) {
+export function Textarea({
+  className = "",
+  rows = 4,
+  ...props
+}: ComponentProps<"textarea">) {
   return (
     <textarea
       rows={rows}

@@ -24,11 +24,15 @@ const ALLOWED_ORIGINS = (Deno.env.get("MCP_ALLOWED_ORIGINS") ?? "*")
 function corsHeaders(origin: string | null): Record<string, string> {
   const headers: Record<string, string> = {
     "content-type": "application/json",
-    "access-control-allow-headers": "authorization, content-type, mcp-session-id",
+    "access-control-allow-headers":
+      "authorization, content-type, mcp-session-id",
     "access-control-allow-methods": "POST, GET, DELETE, OPTIONS",
     "access-control-expose-headers": "mcp-session-id",
   };
-  if (ALLOWED_ORIGINS.includes("*") || (origin && ALLOWED_ORIGINS.includes(origin))) {
+  if (
+    ALLOWED_ORIGINS.includes("*") ||
+    (origin && ALLOWED_ORIGINS.includes(origin))
+  ) {
     headers["access-control-allow-origin"] = origin ?? "*";
   }
   return headers;
@@ -138,12 +142,19 @@ Deno.serve(async (request: Request) => {
   const pathname = url.pathname.replace(/\/$/, "");
 
   // OAuth 2.1 protected-resource metadata (RFC 9728)
-  if (request.method === "GET" && pathname.endsWith("/.well-known/oauth-protected-resource")) {
+  if (
+    request.method === "GET" &&
+    pathname.endsWith("/.well-known/oauth-protected-resource")
+  ) {
     return json(protectedResourceMetadata(), 200, cors);
   }
 
   if (request.method === "GET" && pathname.endsWith("/mcp")) {
-    return json({ status: "ok", server: SERVER_INFO, protocolVersion: PROTOCOL_VERSION }, 200, cors);
+    return json(
+      { status: "ok", server: SERVER_INFO, protocolVersion: PROTOCOL_VERSION },
+      200,
+      cors,
+    );
   }
 
   if (request.method === "DELETE" && pathname.endsWith("/mcp")) {
@@ -156,7 +167,10 @@ Deno.serve(async (request: Request) => {
 
   // Verify token signature and expiry at the HTTP boundary before dispatching
   // MCP calls. The API repeats getClaims validation for defense in depth.
-  const authClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY") ?? "");
+  const authClient = createClient(
+    SUPABASE_URL,
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+  );
   const authResult = await authenticateMcpRequest(
     request.headers.get("Authorization"),
     (token) => authClient.auth.getClaims(token),
@@ -180,7 +194,14 @@ Deno.serve(async (request: Request) => {
         responses.push(error(null, ERR_INVALID_REQUEST, "Invalid request"));
         continue;
       }
-      const res = await handleMessage(msg as { id?: unknown; method?: string; params?: Record<string, unknown> }, accessToken);
+      const res = await handleMessage(
+        msg as {
+          id?: unknown;
+          method?: string;
+          params?: Record<string, unknown>;
+        },
+        accessToken,
+      );
       if (res !== undefined) responses.push(res);
     }
     return json(responses, 200, cors);
@@ -190,7 +211,11 @@ Deno.serve(async (request: Request) => {
     return json(error(null, ERR_INVALID_REQUEST, "Invalid request"), 400, cors);
   }
 
-  const msg = body as { id?: unknown; method?: string; params?: Record<string, unknown> };
+  const msg = body as {
+    id?: unknown;
+    method?: string;
+    params?: Record<string, unknown>;
+  };
   const response = await handleMessage(msg, accessToken);
   return json(response ?? {}, 200, cors);
 });

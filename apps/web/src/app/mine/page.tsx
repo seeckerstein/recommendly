@@ -62,7 +62,9 @@ export default function MyRecommendationsPage() {
   }
 
   const present = Array.from(new Set((recs ?? []).map((r) => r.category_id)));
-  const visible = (recs ?? []).filter((r) => filter === "all" || r.category_id === filter);
+  const visible = (recs ?? []).filter(
+    (r) => filter === "all" || r.category_id === filter,
+  );
 
   return (
     <AppShell>
@@ -102,9 +104,7 @@ export default function MyRecommendationsPage() {
         <div className="mt-10">
           {loading && <CardSkeletonList />}
 
-          {error && !loading && (
-            <ErrorState message={error} onRetry={load} />
-          )}
+          {error && !loading && <ErrorState message={error} onRetry={load} />}
 
           {!loading && !error && recs?.length === 0 && (
             <EmptyState
@@ -130,9 +130,13 @@ export default function MyRecommendationsPage() {
             </RecommendationList>
           )}
 
-          {!loading && !error && recs && recs.length > 0 && visible.length === 0 && (
-            <EmptyState title="Nothing in this category yet" />
-          )}
+          {!loading &&
+            !error &&
+            recs &&
+            recs.length > 0 &&
+            visible.length === 0 && (
+              <EmptyState title="Nothing in this category yet" />
+            )}
         </div>
       </Page>
 

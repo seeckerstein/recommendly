@@ -1,4 +1,10 @@
-export function Rating({ value, size = "md" }: { value: number; size?: "sm" | "md" }) {
+export function Rating({
+  value,
+  size = "md",
+}: {
+  value: number;
+  size?: "sm" | "md";
+}) {
   const clamped = Math.max(0, Math.min(5, Math.round(value)));
   return (
     <span
@@ -9,7 +15,11 @@ export function Rating({ value, size = "md" }: { value: number; size?: "sm" | "m
       }`}
     >
       {[1, 2, 3, 4, 5].map((i) => (
-        <span key={i} aria-hidden className={i <= clamped ? "" : "text-line-strong"}>
+        <span
+          key={i}
+          aria-hidden
+          className={i <= clamped ? "" : "text-line-strong"}
+        >
           ★
         </span>
       ))}
@@ -29,7 +39,11 @@ export function RatingInput({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <div role="radiogroup" aria-label="Rating" className="flex items-center gap-1">
+      <div
+        role="radiogroup"
+        aria-label="Rating"
+        className="flex items-center gap-1"
+      >
         {[1, 2, 3, 4, 5].map((n) => {
           const selected = (value ?? 0) >= n;
           return (
@@ -41,7 +55,9 @@ export function RatingInput({
               aria-label={`${n} star${n > 1 ? "s" : ""}`}
               onClick={() => onChange(value === n ? null : n)}
               className={`inline-flex size-11 items-center justify-center rounded-full text-xl transition-colors ${
-                selected ? "text-accent" : "text-line-strong hover:text-accent/50"
+                selected
+                  ? "text-accent"
+                  : "text-line-strong hover:text-accent/50"
               }`}
             >
               ★

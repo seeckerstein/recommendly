@@ -34,7 +34,10 @@ export default function ResetPasswordPage() {
 
   if (success) {
     return (
-      <AuthShell title="Password updated." lede="You can sign in with your new password now.">
+      <AuthShell
+        title="Password updated."
+        lede="You can sign in with your new password now."
+      >
         <ButtonLink href="/auth/login" variant="accent" size="lg">
           Go to sign in
         </ButtonLink>
@@ -69,7 +72,9 @@ export default function ResetPasswordPage() {
           />
         </Field>
 
-        {mismatch && <p className="text-sm text-danger">Passwords do not match.</p>}
+        {mismatch && (
+          <p className="text-sm text-danger">Passwords do not match.</p>
+        )}
         {error && (
           <p role="alert" className="text-sm text-danger">
             {error}

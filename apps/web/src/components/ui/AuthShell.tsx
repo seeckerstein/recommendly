@@ -21,7 +21,11 @@ export function AuthShell({
         <h1 className="display mt-3 text-[2.25rem] font-normal leading-[1.1] text-ink">
           {title}
         </h1>
-        {lede && <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">{lede}</p>}
+        {lede && (
+          <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">
+            {lede}
+          </p>
+        )}
         <div className="mt-9">{children}</div>
         {footer && <div className="mt-7 text-sm text-ink-soft">{footer}</div>}
       </div>

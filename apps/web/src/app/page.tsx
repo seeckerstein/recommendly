@@ -56,7 +56,11 @@ export default async function HomePage() {
           <ButtonLink href="/new" variant="accent" size="lg">
             Share a recommendation
           </ButtonLink>
-          <ButtonLink href="/discover-recommendations" variant="secondary" size="lg">
+          <ButtonLink
+            href="/discover-recommendations"
+            variant="secondary"
+            size="lg"
+          >
             See what&apos;s recommended to you
           </ButtonLink>
         </div>
@@ -69,8 +73,12 @@ export default async function HomePage() {
               className="group flex items-baseline gap-5 py-6 transition-colors hover:bg-surface-sunk/40"
             >
               <div className="min-w-0 flex-1">
-                <h2 className="display text-[1.25rem] leading-snug text-ink">{p.title}</h2>
-                <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">{p.body}</p>
+                <h2 className="display text-[1.25rem] leading-snug text-ink">
+                  {p.title}
+                </h2>
+                <p className="mt-1 text-[15px] leading-relaxed text-ink-soft">
+                  {p.body}
+                </p>
               </div>
               <span
                 aria-hidden

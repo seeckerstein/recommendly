@@ -38,7 +38,9 @@ export function TopBar() {
         <Link
           href="/notifications"
           aria-label={
-            unreadCount > 0 ? `Activity, ${unreadCount} unread` : "Activity and notifications"
+            unreadCount > 0
+              ? `Activity, ${unreadCount} unread`
+              : "Activity and notifications"
           }
           aria-current={pathname === "/notifications" ? "page" : undefined}
           className="inline-flex size-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface-sunk hover:text-ink"
@@ -59,7 +61,16 @@ export function TopBar() {
             onClick={() => setOpen((v) => !v)}
             className="inline-flex size-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-surface-sunk hover:text-ink"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className="size-5" aria-hidden>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="size-5"
+              aria-hidden
+            >
               <circle cx="12" cy="8" r="4" />
               <path d="M4 21c1.5-4 5-5 8-5s6.5 1 8 5" />
             </svg>

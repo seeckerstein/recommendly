@@ -56,7 +56,11 @@ export default function DiscoverPage() {
             type="search"
             autoComplete="off"
           />
-          <Button type="submit" disabled={loading || !query.trim()} className="shrink-0">
+          <Button
+            type="submit"
+            disabled={loading || !query.trim()}
+            className="shrink-0"
+          >
             {loading ? "Searching…" : "Search"}
           </Button>
         </form>
@@ -76,7 +80,9 @@ export default function DiscoverPage() {
             </div>
           )}
 
-          {error && !loading && <ErrorState title="Search failed" message={error} />}
+          {error && !loading && (
+            <ErrorState title="Search failed" message={error} />
+          )}
 
           {!loading && !error && results?.length === 0 && (
             <EmptyState
@@ -93,10 +99,18 @@ export default function DiscoverPage() {
                     href={`/discover/${u.id}`}
                     className="group flex items-center gap-4 py-4 transition-colors hover:bg-surface-sunk/40"
                   >
-                    <Avatar name={u.display_name} src={u.avatar_url} size={44} />
+                    <Avatar
+                      name={u.display_name}
+                      src={u.avatar_url}
+                      size={44}
+                    />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-ink">{u.display_name}</p>
-                      <p className="truncate text-sm text-ink-faint">{u.email}</p>
+                      <p className="truncate font-medium text-ink">
+                        {u.display_name}
+                      </p>
+                      <p className="truncate text-sm text-ink-faint">
+                        {u.email}
+                      </p>
                     </div>
                     <span
                       aria-hidden

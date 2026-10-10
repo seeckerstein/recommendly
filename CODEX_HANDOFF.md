@@ -15,6 +15,7 @@ Personal Recommendation Network: a private-by-default recommendation network for
 Core product principle: the API/domain layer is the canonical interface. Mobile, web, ChatGPT, Claude, and future LLM clients are clients of the same authorization model.
 
 V1 includes:
+
 - accounts/profiles
 - public/private profiles
 - subscription requests, approval, rejection, revocation, unsubscribe
@@ -40,6 +41,7 @@ The PRD explicitly requires identical authorization for mobile/web/LLM clients a
 The implementation is intentionally **Supabase-first, API-first, LLM-native**.
 
 Use:
+
 - Supabase Postgres
 - Supabase Auth
 - PostgreSQL RLS
@@ -55,6 +57,7 @@ Use:
 Do NOT introduce a separate Node/NestJS backend unless a concrete requirement makes it necessary.
 
 The product's MCP server is different from Supabase's development MCP:
+
 1. Supabase MCP = engineering/development tooling for the coding agent.
 2. Product MCP = customer-facing LLM interface, authenticated as a specific user and restricted by the same domain authorization as REST.
 
@@ -68,6 +71,7 @@ SQL migrations are the schema source of truth. Any schema change must be represe
 
 Expected high-level structure:
 
+```text
 recommendation-network/
   apps/
     mobile/
@@ -95,6 +99,7 @@ recommendation-network/
   AGENTS.md
   README.md
   package.json
+```
 
 The previous Desktop Codex session created/edited the project foundation and documentation. The actual repository should be inspected to determine the exact current state.
 
@@ -109,6 +114,7 @@ The reconstructed conversation shows that Desktop Codex:
 Created the backend-first foundation before any mobile UI.
 
 It added/edited project files including:
+
 - `.env.example`
 - `.gitignore`
 - `AGENTS.md`
@@ -129,6 +135,7 @@ It added/edited project files including:
 - `tsconfig.json`
 
 The agent reported that the backend-first foundation included:
+
 - Supabase schema
 - seeded V1 categories
 - RLS/privacy boundary
@@ -199,6 +206,7 @@ The token was to be entered into the terminal only, never pasted into chat or co
 The user ultimately authenticated the local Supabase CLI successfully.
 
 Important security rule:
+
 - Never place the Supabase access token in this handoff, source files, Git, or chat.
 - If the old token still exists, it should be revoked after the required deployment/linking work.
 - Verify `.gitignore` and environment/secrets handling before continuing.
@@ -208,6 +216,7 @@ Important security rule:
 At the end of the reconstructed conversation, the previous agent had authenticated successfully and performed a migration dry-run.
 
 The reported dry-run was clean:
+
 - only the two tested schema/RLS migrations were going to be applied
 - no seed or unrelated changes were going to be deployed
 
@@ -323,6 +332,7 @@ Do not begin mobile UI until these backend conditions pass:
 - database RLS tests pass
 
 The permission matrix must cover:
+
 - owner -> YES
 - public profile -> YES
 - approved subscriber -> YES
@@ -341,6 +351,7 @@ Child-table leakage must also be tested: comments and ratings must not expose pr
 ## 9. Security rules
 
 Never:
+
 - connect development MCP tooling to production data or credentials; use local Supabase for development MCP/testing unless the operation is explicitly intended and authorized for production
 - commit service-role keys
 - commit Supabase access tokens
@@ -351,6 +362,7 @@ Never:
 - weaken authorization to make tests pass
 
 Use:
+
 - migrations for schema changes
 - RLS as mandatory database security
 - caller-scoped Supabase clients for normal user operations
@@ -383,6 +395,7 @@ After verifying the current state:
 The previous Desktop Codex session did meaningful infrastructure work. Do not throw it away and do not recreate the repository from scratch.
 
 The new agent should:
+
 - preserve existing migrations
 - preserve existing RLS policies unless inspection shows a concrete defect
 - preserve the Docker/local Supabase workflow
@@ -404,6 +417,7 @@ Commands should be given in small, copy/paste-friendly PowerShell steps.
 Avoid asking the user to paste secrets into chat.
 
 When a command may modify database state, explain whether it is:
+
 - local-only
 - development/staging
 - production

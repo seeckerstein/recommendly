@@ -10,19 +10,19 @@ Windows development machine.
 
 Verified global tools:
 
-| Tool | Version | Location / notes |
-|---|---|---|
-| Node.js | 26.8.1 | `C:\Program Files\nodejs\node.exe` |
-| npm | 11.19.0 | bundled with Node |
-| pnpm | 12.11.0 global | Recommendly resolves 11.19.0 because of its `packageManager` field |
-| Git | 2.56.0.windows.2 | `C:\Program Files\Git\cmd\git.exe` |
-| GitHub CLI | 2.102.0 | WinGet Links |
-| Vercel CLI | 63.1.0 | npm global |
-| Supabase CLI | 2.120.0 | Scoop |
-| Docker | 29.8.2 | Docker Desktop / WSL2 |
-| Docker Compose | 5.5.1 | Docker CLI plugin |
-| Scoop | 0.6.0 | package manager |
-| Codex | 0.162.0 | ChatGPT/Codex desktop environment |
+| Tool           | Version          | Location / notes                                                   |
+| -------------- | ---------------- | ------------------------------------------------------------------ |
+| Node.js        | 26.8.1           | `C:\Program Files\nodejs\node.exe`                                 |
+| npm            | 11.19.0          | bundled with Node                                                  |
+| pnpm           | 12.11.0 global   | Recommendly resolves 11.19.0 because of its `packageManager` field |
+| Git            | 2.56.0.windows.2 | `C:\Program Files\Git\cmd\git.exe`                                 |
+| GitHub CLI     | 2.102.0          | WinGet Links                                                       |
+| Vercel CLI     | 63.1.0           | npm global                                                         |
+| Supabase CLI   | 2.120.0          | Scoop                                                              |
+| Docker         | 29.8.2           | Docker Desktop / WSL2                                              |
+| Docker Compose | 5.5.1            | Docker CLI plugin                                                  |
+| Scoop          | 0.6.0            | package manager                                                    |
+| Codex          | 0.162.0          | ChatGPT/Codex desktop environment                                  |
 
 No `.nvmrc` or `.node-version` is currently used by Recommendly.
 
@@ -46,18 +46,21 @@ Do not perform broad application dependency upgrades as part of environment main
 Verified working:
 
 ### GitHub
+
 - GitHub CLI authenticated as `seeckerstein`.
 - `seeckerstein/recommendly` is accessible.
 - Default branch is `main`.
 - Git remote uses the Recommendly GitHub repository.
 
 ### Vercel
+
 - Vercel CLI authenticated as `johaneckerstein-1427`.
 - Active team: `johaneckerstein-1427's projects`.
 - Plan: Hobby.
 - Recommendly deployment access must still be treated as production access; authentication alone is not permission to deploy.
 
 ### Supabase
+
 - CLI authenticated.
 - **The only Supabase project for Recommendly is `recommendly-dev` (`zpjsmuuxgcewmymmdddr`), and the owner has explicitly confirmed that this is also the intended production project. There is no separate production project.**
 - Supabase dashboard showed the project as Healthy and displayed a `PRODUCTION` environment badge for the selected `main` branch. The project name remains `recommendly-dev`; do not infer that a separate production project exists.
@@ -116,6 +119,7 @@ Path = "C:\\Users\\seeckerstein\\scoop\\shims;C:\\Users\\seeckerstein\\AppData\\
 Do not add Codex-generated temporary paths such as `.codex\\tmp\\arg0\\...` or version-specific `codex-path` directories to this permanent PATH. They are implementation details and change across Codex updates.
 
 This explicit PATH is required so Codex can resolve:
+
 - `gh`
 - `supabase`
 - `vercel`
@@ -185,6 +189,7 @@ When something fails:
 6. Stop if the same environment failure occurs twice.
 
 Do not:
+
 - reinstall working tools;
 - change Node/pnpm versions without evidence;
 - modify global Git configuration casually;
@@ -197,6 +202,7 @@ Do not:
 Recommendly currently has one hosted Supabase project, `recommendly-dev` (`zpjsmuuxgcewmymmdddr`), and the owner has explicitly confirmed it is the production project; there is no separate production Supabase project. The dashboard's `PRODUCTION` badge refers to the selected production environment/branch, even though the project name includes `-dev`.
 
 Before any stateful remote action, explicitly identify the target:
+
 - local Supabase stack for development/tests
 - hosted production Supabase project: `zpjsmuuxgcewmymmdddr`
 
@@ -207,6 +213,7 @@ No direct production SQL. No dashboard-only schema changes. No uncommitted migra
 ## 10. Current known repository condition
 
 The last verified audit found:
+
 - no environment blockers;
 - Recommendly Git working tree otherwise clean;
 - `youdlike_logo.png` intentionally untracked and untouched;

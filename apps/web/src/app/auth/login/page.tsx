@@ -22,7 +22,10 @@ function LoginForm() {
     setLoading(true);
 
     const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
     if (error) {
       setError(error.message);
@@ -75,38 +78,44 @@ function LoginForm() {
             </p>
           )}
 
-          <Button type="submit" variant="accent" size="lg" disabled={loading} className="w-full">
+          <Button
+            type="submit"
+            variant="accent"
+            size="lg"
+            disabled={loading}
+            className="w-full"
+          >
             {loading ? "Signing in…" : "Sign in"}
           </Button>
         </form>
 
-      <div className="mt-6 space-y-2">
-        {["google"].map((provider) => (
-          <button
-            key={provider}
-            type="button"
-            onClick={async () => {
-              setError(null);
-              setLoading(true);
-              const supabase = createSupabaseBrowserClient();
-              const { error } = await supabase.auth.signInWithOAuth({
-                provider: provider as "google" | "apple",
-                options: {
-                  redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(new URLSearchParams(window.location.search).get("redirectedFrom") ?? "/")}`,
-                },
-              });
-              if (error) {
-                setError(error.message);
-                setLoading(false);
-              }
-            }}
-            disabled={loading}
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-line-strong bg-surface px-5 text-sm font-medium text-ink transition-colors hover:bg-surface-sunk disabled:opacity-50"
-          >
-            Continue with {provider === "google" ? "Google" : "Apple"}
-          </button>
-        ))}
-      </div>
+        <div className="mt-6 space-y-2">
+          {["google"].map((provider) => (
+            <button
+              key={provider}
+              type="button"
+              onClick={async () => {
+                setError(null);
+                setLoading(true);
+                const supabase = createSupabaseBrowserClient();
+                const { error } = await supabase.auth.signInWithOAuth({
+                  provider: provider as "google" | "apple",
+                  options: {
+                    redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(new URLSearchParams(window.location.search).get("redirectedFrom") ?? "/")}`,
+                  },
+                });
+                if (error) {
+                  setError(error.message);
+                  setLoading(false);
+                }
+              }}
+              disabled={loading}
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-line-strong bg-surface px-5 text-sm font-medium text-ink transition-colors hover:bg-surface-sunk disabled:opacity-50"
+            >
+              Continue with {provider === "google" ? "Google" : "Apple"}
+            </button>
+          ))}
+        </div>
 
         <div className="mt-7 flex flex-wrap items-baseline justify-between gap-2 text-sm text-ink-soft">
           <p>

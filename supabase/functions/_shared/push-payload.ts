@@ -15,12 +15,27 @@ export function buildNotificationPayload(input: {
 }): PushPayload {
   const actor = input.actorName ?? "Someone";
   const messages: Record<string, { title: string; body: string }> = {
-    subscription_request: { title: "Connection request", body: `${actor} asked to connect with you.` },
-    subscription_approved: { title: "Connection approved", body: `${actor} approved your connection request.` },
-    subscription_rejected: { title: "Connection declined", body: `${actor} declined your connection request.` },
-    access_revoked: { title: "Access removed", body: `${actor} removed your access.` },
+    subscription_request: {
+      title: "Connection request",
+      body: `${actor} asked to connect with you.`,
+    },
+    subscription_approved: {
+      title: "Connection approved",
+      body: `${actor} approved your connection request.`,
+    },
+    subscription_rejected: {
+      title: "Connection declined",
+      body: `${actor} declined your connection request.`,
+    },
+    access_revoked: {
+      title: "Access removed",
+      body: `${actor} removed your access.`,
+    },
   };
-  const message = messages[input.type] ?? { title: "Activity", body: "You have a new notification." };
+  const message = messages[input.type] ?? {
+    title: "Activity",
+    body: "You have a new notification.",
+  };
   return {
     title: `YOU'D LIKE — ${message.title}`,
     body: message.body,

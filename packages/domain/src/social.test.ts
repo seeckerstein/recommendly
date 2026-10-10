@@ -79,11 +79,15 @@ describe("idempotent subscription transitions", () => {
   // supabase/migrations/202609300002_idempotent_subscription_transitions.sql
   function transition(currentStatus: string, nextStatus: string): string {
     const allowedNext = ["APPROVED", "REJECTED", "REVOKED"];
-    if (!allowedNext.includes(nextStatus)) throw new Error("invalid subscription transition");
-    if (nextStatus === currentStatus && nextStatus === "APPROVED") return currentStatus;
-    if (nextStatus === currentStatus && nextStatus === "REJECTED") return currentStatus;
+    if (!allowedNext.includes(nextStatus))
+      throw new Error("invalid subscription transition");
+    if (nextStatus === currentStatus && nextStatus === "APPROVED")
+      return currentStatus;
+    if (nextStatus === currentStatus && nextStatus === "REJECTED")
+      return currentStatus;
     if (
-      (currentStatus === "PENDING" && !["APPROVED", "REJECTED"].includes(nextStatus)) ||
+      (currentStatus === "PENDING" &&
+        !["APPROVED", "REJECTED"].includes(nextStatus)) ||
       (currentStatus === "APPROVED" && nextStatus !== "REVOKED")
     ) {
       throw new Error("invalid subscription transition");
@@ -112,11 +116,15 @@ describe("idempotent subscription transitions", () => {
   });
 
   it("APPROVED -> REJECTED still fails", () => {
-    expect(() => transition("APPROVED", "REJECTED")).toThrow("invalid subscription transition");
+    expect(() => transition("APPROVED", "REJECTED")).toThrow(
+      "invalid subscription transition",
+    );
   });
 
   it("PENDING -> REVOKED still fails", () => {
-    expect(() => transition("PENDING", "REVOKED")).toThrow("invalid subscription transition");
+    expect(() => transition("PENDING", "REVOKED")).toThrow(
+      "invalid subscription transition",
+    );
   });
 
   it("REJECTED -> APPROVED already succeeds in the original state machine", () => {

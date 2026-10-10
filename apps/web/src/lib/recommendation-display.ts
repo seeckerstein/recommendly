@@ -45,13 +45,21 @@ export const metadataFields: Record<CategorySlug, MetaField[]> = {
     { key: "genre", label: "Genre", placeholder: "e.g. Literary fiction" },
   ],
   movie: [
-    { key: "director", label: "Director", placeholder: "e.g. Denis Villeneuve" },
+    {
+      key: "director",
+      label: "Director",
+      placeholder: "e.g. Denis Villeneuve",
+    },
     { key: "genre", label: "Genre", placeholder: "e.g. Science fiction" },
     { key: "year", label: "Year", placeholder: "e.g. 2021" },
     { key: "platform", label: "Where to watch", placeholder: "e.g. Netflix" },
   ],
   restaurant: [
-    { key: "location", label: "Location", placeholder: "City or neighbourhood" },
+    {
+      key: "location",
+      label: "Location",
+      placeholder: "City or neighbourhood",
+    },
     { key: "cuisine", label: "Cuisine", placeholder: "e.g. Thai" },
   ],
   series: [
@@ -104,7 +112,10 @@ export function secondaryMetadata(
   const fields = metadataFields[category as CategorySlug] ?? [];
   return fields
     .filter((f) => !shown.has(f.key))
-    .map((f) => ({ label: f.label, value: String(metadata?.[f.key] ?? "").trim() }))
+    .map((f) => ({
+      label: f.label,
+      value: String(metadata?.[f.key] ?? "").trim(),
+    }))
     .filter((f) => f.value !== "");
 }
 

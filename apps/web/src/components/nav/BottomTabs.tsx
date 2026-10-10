@@ -23,7 +23,11 @@ export function BottomTabs() {
             aria-current={active ? "page" : undefined}
             aria-label={item.accent ? "Share a recommendation" : item.label}
             className={`flex min-h-[60px] flex-col items-center justify-center gap-1 px-1 text-[10.5px] font-medium transition-colors ${
-              item.accent ? "text-accent" : active ? "text-ink" : "text-ink-faint"
+              item.accent
+                ? "text-accent"
+                : active
+                  ? "text-ink"
+                  : "text-ink-faint"
             }`}
           >
             <span

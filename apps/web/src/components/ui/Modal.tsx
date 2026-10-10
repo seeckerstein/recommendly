@@ -48,7 +48,9 @@ export function Modal({
           {title}
         </h2>
         {description && (
-          <p className="mt-2 text-sm leading-relaxed text-ink-soft">{description}</p>
+          <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+            {description}
+          </p>
         )}
         <div className="mt-6">{children}</div>
       </div>

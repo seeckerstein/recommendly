@@ -8,8 +8,12 @@ type BeforeInstallPromptEvent = Event & {
 };
 
 export function InstallPrompt() {
-  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
-  const [status, setStatus] = useState<"idle" | "installing" | "done" | "dismissed">("idle");
+  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
+    null,
+  );
+  const [status, setStatus] = useState<
+    "idle" | "installing" | "done" | "dismissed"
+  >("idle");
 
   useEffect(() => {
     function onPrompt(event: Event) {
@@ -30,7 +34,11 @@ export function InstallPrompt() {
   }
 
   if (status === "done") {
-    return <p className="text-sm text-positive">Installed. Check your home screen.</p>;
+    return (
+      <p className="text-sm text-positive">
+        Installed. Check your home screen.
+      </p>
+    );
   }
 
   if (deferred) {
@@ -48,7 +56,9 @@ export function InstallPrompt() {
 
   return (
     <p className="text-sm leading-relaxed text-ink-soft">
-      Chrome will offer a one-tap install button when available. Otherwise, open Chrome's menu (&#8902;) and choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.
+      Chrome will offer a one-tap install button when available. Otherwise, open
+      Chrome's menu (&#8902;) and choose <strong>Install app</strong> or{" "}
+      <strong>Add to Home screen</strong>.
     </p>
   );
 }

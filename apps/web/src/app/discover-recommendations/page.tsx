@@ -36,7 +36,9 @@ export default function DiscoverRecommendationsPage() {
   }, []);
 
   const present = Array.from(new Set((recs ?? []).map((r) => r.category_id)));
-  const visible = (recs ?? []).filter((r) => filter === "all" || r.category_id === filter);
+  const visible = (recs ?? []).filter(
+    (r) => filter === "all" || r.category_id === filter,
+  );
 
   return (
     <AppShell>
@@ -90,15 +92,23 @@ export default function DiscoverRecommendationsPage() {
                 <RecommendationCard
                   key={r.id}
                   recommendation={r}
-                  owner={{ id: r.owner_id, name: r.owner_name, email: r.owner_email }}
+                  owner={{
+                    id: r.owner_id,
+                    name: r.owner_name,
+                    email: r.owner_email,
+                  }}
                 />
               ))}
             </RecommendationList>
           )}
 
-          {!loading && !error && recs && recs.length > 0 && visible.length === 0 && (
-            <EmptyState title="Nothing in this category yet" />
-          )}
+          {!loading &&
+            !error &&
+            recs &&
+            recs.length > 0 &&
+            visible.length === 0 && (
+              <EmptyState title="Nothing in this category yet" />
+            )}
         </div>
       </Page>
     </AppShell>

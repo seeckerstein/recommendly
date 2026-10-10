@@ -26,7 +26,9 @@ const typeLabels: Record<string, string> = {
 };
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<AppNotification[] | null>(null);
+  const [notifications, setNotifications] = useState<AppNotification[] | null>(
+    null,
+  );
   const [sent, setSent] = useState<SubscriptionRecord[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,12 +56,16 @@ export default function NotificationsPage() {
   function markLocallyRead(id: string) {
     setNotifications(
       (prev) =>
-        prev?.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n)) ??
-        null,
+        prev?.map((n) =>
+          n.id === id ? { ...n, read_at: new Date().toISOString() } : n,
+        ) ?? null,
     );
   }
 
-  async function handleTransition(n: AppNotification, status: "APPROVED" | "REJECTED") {
+  async function handleTransition(
+    n: AppNotification,
+    status: "APPROVED" | "REJECTED",
+  ) {
     if (!n.reference_id) return;
     setActionLoading(n.id + status);
     try {
@@ -107,7 +113,10 @@ export default function NotificationsPage() {
       n.reference_type === "subscription" &&
       n.reference_id !== null;
     return (
-      <li key={n.id} className={`flex gap-4 py-5 ${isUnread ? "" : "opacity-70"}`}>
+      <li
+        key={n.id}
+        className={`flex gap-4 py-5 ${isUnread ? "" : "opacity-70"}`}
+      >
         <Avatar
           name={n.profiles?.display_name ?? "User"}
           src={n.profiles?.avatar_url ?? null}
@@ -125,9 +134,14 @@ export default function NotificationsPage() {
             ) : (
               <span className="font-medium">Former member</span>
             )}{" "}
-            <span className="text-ink-soft">{typeLabels[n.type] ?? n.type}</span>
+            <span className="text-ink-soft">
+              {typeLabels[n.type] ?? n.type}
+            </span>
           </p>
-          <time dateTime={n.created_at} className="mt-1 block text-xs text-ink-faint">
+          <time
+            dateTime={n.created_at}
+            className="mt-1 block text-xs text-ink-faint"
+          >
             {formatRelative(n.created_at)}
           </time>
 
@@ -176,7 +190,10 @@ export default function NotificationsPage() {
           )}
         </div>
         {isUnread && (
-          <span aria-hidden className="mt-2 size-2 shrink-0 rounded-full bg-accent" />
+          <span
+            aria-hidden
+            className="mt-2 size-2 shrink-0 rounded-full bg-accent"
+          />
         )}
       </li>
     );
@@ -243,7 +260,10 @@ export default function NotificationsPage() {
                           waiting for their approval of your access request
                         </span>
                       </p>
-                      <time dateTime={s.requested_at} className="mt-1 block text-xs text-ink-faint">
+                      <time
+                        dateTime={s.requested_at}
+                        className="mt-1 block text-xs text-ink-faint"
+                      >
                         {formatRelative(s.requested_at)}
                       </time>
                     </div>
@@ -254,7 +274,9 @@ export default function NotificationsPage() {
                       onClick={() => handleCancelRequest(s)}
                       disabled={actionLoading === s.id + "cancel"}
                     >
-                      {actionLoading === s.id + "cancel" ? "…" : "Remove request"}
+                      {actionLoading === s.id + "cancel"
+                        ? "…"
+                        : "Remove request"}
                     </Button>
                   </li>
                 ))}

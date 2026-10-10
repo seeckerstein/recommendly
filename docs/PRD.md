@@ -8,7 +8,6 @@ The governing rules are: private recommendations are visible only to their owner
 
 Source: `C:\Users\seeckerstein\Downloads\recommendation_network_prd (1).docx`.
 
-
 ## Push notifications (delivery layer)
 
 Recommendly notifications remain application events; push, email, and future

@@ -17,7 +17,11 @@ export function EmptyState({
           {description}
         </p>
       )}
-      {children && <div className="mt-7 flex flex-wrap justify-center gap-3">{children}</div>}
+      {children && (
+        <div className="mt-7 flex flex-wrap justify-center gap-3">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
@@ -37,7 +41,9 @@ export function ErrorState({
       className="rounded-[var(--radius-card)] border border-danger/25 bg-danger-soft px-5 py-4"
     >
       <p className="text-sm font-medium text-danger">{title}</p>
-      {message && <p className="mt-1 text-sm leading-relaxed text-ink-soft">{message}</p>}
+      {message && (
+        <p className="mt-1 text-sm leading-relaxed text-ink-soft">{message}</p>
+      )}
       {onRetry && (
         <button
           type="button"

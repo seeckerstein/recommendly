@@ -8,7 +8,12 @@ export function Input({ className = "", ...props }: ComponentProps<"input">) {
 }
 
 export function Select({ className = "", ...props }: ComponentProps<"select">) {
-  return <select className={`${field} appearance-none pr-9 ${className}`} {...props} />;
+  return (
+    <select
+      className={`${field} appearance-none pr-9 ${className}`}
+      {...props}
+    />
+  );
 }
 
 /** Label + optional hint + error, wired to the control via htmlFor. */
@@ -27,9 +32,14 @@ export function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={htmlFor} className="flex items-baseline gap-2 text-sm font-medium text-ink">
+      <label
+        htmlFor={htmlFor}
+        className="flex items-baseline gap-2 text-sm font-medium text-ink"
+      >
         {label}
-        {optional && <span className="text-xs font-normal text-ink-faint">optional</span>}
+        {optional && (
+          <span className="text-xs font-normal text-ink-faint">optional</span>
+        )}
       </label>
       {children}
       {hint && <p className="text-xs leading-relaxed text-ink-faint">{hint}</p>}
