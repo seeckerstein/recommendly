@@ -176,11 +176,11 @@ After Docker became available, the previous Codex session reported:
 
 ### Hosted development Supabase project
 
-The previous session created a hosted Supabase development/staging project named approximately:
+The previous session created a hosted Supabase project named `recommendly-dev` with ref `zpjsmuuxgcewmymmdddr`.
 
-    recommendly-dev
+**Current authoritative clarification from the owner (2026-10-10): this is the only hosted Supabase project for Recommendly, and it is the production project. There is no separate production project.** The dashboard shows Healthy and a `PRODUCTION` badge for the selected `main` branch, despite the project name containing `-dev`.
 
-This is development/staging only. There must be no production project or production MCP connection at this stage.
+Keep local development and DB tests on the local Supabase stack. Never treat the hosted project as a disposable development target or run destructive local-reset workflows against it. Before production migration work, inspect migration history and follow the committed/reviewed migration workflow.
 
 The user supplied the hosted project reference to the previous agent.
 
@@ -266,10 +266,10 @@ At the end of the reconstructed Desktop Codex work, the intended state was:
 2. Supabase local development is working through Docker.
 3. Initial migrations and RLS tests pass locally.
 4. TypeScript/unit tests pass.
-5. A hosted development Supabase project exists.
-6. Local Supabase CLI authentication to that project succeeded.
-7. A migration dry-run against the hosted development project was clean.
-8. The next step was to deploy the committed migrations to development, then expand API/domain behavior and permission tests.
+5. The only hosted Supabase project is `recommendly-dev` (`zpjsmuuxgcewmymmdddr`); the owner has confirmed this is production and there is no separate production project.
+6. Local Supabase CLI authentication to that project succeeded historically; verify the current CLI link before any remote operation.
+7. Historical migration dry-run notes referred to development and must not be treated as current production migration verification.
+8. For any future production migration task, first verify remote migration history against committed migrations, then deploy only with explicit authorization.
 9. Mobile UI should NOT be started until the backend acceptance gate passes.
 
 The exact current state must now be checked from the repository and Supabase rather than assumed.
@@ -291,8 +291,8 @@ Before making changes:
 9. Inspect `.mcp.json` if present.
 10. Verify Docker Desktop/local Supabase availability.
 11. Verify the project-local Supabase CLI.
-12. Determine whether the repository is currently linked to the intended development Supabase project.
-13. Inspect migration history before applying anything remotely.
+12. Determine whether the repository is currently linked to the confirmed production Supabase project `zpjsmuuxgcewmymmdddr` before any remote operation.
+13. Inspect production migration history before applying anything remotely; do not assume a prior development dry-run proves production state.
 14. Check for secrets accidentally present in tracked files.
 15. Only then propose the next action.
 
@@ -335,7 +335,7 @@ Child-table leakage must also be tested: comments and ratings must not expose pr
 ## 9. Security rules
 
 Never:
-- connect development MCP to production
+- connect development MCP tooling to production data or credentials; use local Supabase for development MCP/testing unless the operation is explicitly intended and authorized for production
 - commit service-role keys
 - commit Supabase access tokens
 - expose service-role credentials to mobile/web/LLM clients
