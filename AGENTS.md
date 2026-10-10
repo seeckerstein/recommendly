@@ -129,9 +129,9 @@ After a migration:
 - inspect the migration diff;
 - verify no unrelated schema changes.
 
-Use the project-local Supabase CLI for project operations. Never connect development MCP tooling to production.
+Use the project-local Supabase CLI for project operations. The owner has confirmed that the only hosted Supabase project is `recommendly-dev` (`zpjsmuuxgcewmymmdddr`) and that it is the production project; there is no separate production project. The project name is misleading, so always distinguish the local Supabase stack from this hosted production target. Do not point routine development MCP/testing at hosted production.
 
-Do not run production SQL directly. Production schema changes must travel through Git -> reviewed migration -> project-local Supabase CLI.
+Do not run production SQL directly. Production schema changes must travel through Git -> reviewed migration -> project-local Supabase CLI, and only after explicit authorization.
 
 Do not deploy Edge Functions or modify production secrets/Vault unless the user explicitly authorizes deployment.
 
@@ -174,7 +174,7 @@ Avoid broad UI rewrites while fixing backend/security defects.
 
 ## 9. Production safety
 
-Production is never part of normal local development.
+Production is never part of normal local development. For Recommendly, the sole hosted Supabase project is `recommendly-dev` (`zpjsmuuxgcewmymmdddr`), explicitly confirmed by the owner as production; there is no separate hosted production project. Use local Supabase for routine development and tests.
 
 Never:
 - manually mutate production database state;
