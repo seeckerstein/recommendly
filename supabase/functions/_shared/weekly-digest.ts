@@ -2,10 +2,37 @@ export interface DigestRecommendation {
   id: string;
   category_name: string;
   title: string | null;
-  comment: string;
+  comment: string | null;
   owner_name: string;
 }
 
+export function parseWeeklyDigestRecipientIds(
+  body: unknown,
+): { valid: true; recipientIds?: string[] } | { valid: false } {
+  if (body === null || typeof body !== "object" || Array.isArray(body)) {
+    return { valid: false };
+  }
+
+  const record = body as Record<string, unknown>;
+  if (!Object.hasOwn(record, "recipient_ids")) return { valid: true };
+
+  const recipientIds = record.recipient_ids;
+  if (
+    !Array.isArray(recipientIds) ||
+    recipientIds.length === 0 ||
+    !recipientIds.every(
+      (id) =>
+        typeof id === "string" &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          id,
+        ),
+    )
+  ) {
+    return { valid: false };
+  }
+
+  return { valid: true, recipientIds: [...new Set(recipientIds)] };
+}
 export function groupDigestRecommendations(items: DigestRecommendation[]) {
   const groups = new Map<string, DigestRecommendation[]>();
   for (const item of items) {
@@ -50,7 +77,7 @@ export function renderWeeklyDigest(
         `<section style="margin:24px 0"><h2 style="font-size:18px;margin:0 0 10px">${escapeHtml(category)}</h2><ul style="padding-left:20px;margin:0">${recommendations
           .map((item) => {
             const title = item.title?.trim() || "Recommendation";
-            const description = item.comment.trim();
+            const description = (item.comment ?? "").trim();
             return `<li style="margin:0 0 14px"><strong>${escapeHtml(title)}</strong>${description ? `<p style="margin:4px 0;color:#555">${escapeHtml(description)}</p>` : ""}<p style="margin:4px 0;color:#777;font-size:13px">Recommended by ${escapeHtml(item.owner_name)}</p></li>`;
           })
           .join("")}</ul></section>`,
