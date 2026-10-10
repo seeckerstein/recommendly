@@ -86,7 +86,7 @@ select is(
 -- SECTION 2: NOTIFICATION TRIGGER
 -- ============================================================
 insert into auth.users (id, aud, role, email) values ('00000000-0000-0000-0000-000000000004', 'authenticated', 'authenticated', 'publisher@example.test');
-insert into public.profiles (id, display_name) values ('00000000-0000-0000-0000-000000000004', 'Publisher');
+update public.profiles set display_name = 'Publisher' where id = '00000000-0000-0000-0000-000000000004';
 set local role authenticated;
 select pg_temp._as('00000000-0000-0000-0000-000000000001');
 select lives_ok(
